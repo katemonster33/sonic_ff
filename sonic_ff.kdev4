@@ -1,0 +1,4 @@
+[Project]
+Name=sonic_ff
+Manager=KDevCMakeManager
+VersionControl=kdevgit
