@@ -43,7 +43,6 @@ bool loadSurface( SDL_Surface* gScreenSurface, std::string path, SDL_Surface*& o
     return true;
 }
 
-
 int main(int argc, char **argv) {
   SDL_Window * window = nullptr;
   SDL_Surface* screenSurface = nullptr;
