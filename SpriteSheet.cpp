@@ -1,8 +1,9 @@
 #include "SpriteSheet.h"
 #include <iostream>
+#include <string>
 #include <SDL2/SDL_image.h>
 
-SDL_Surface *loadAndOptimizeSurface(SDL_PixelFormat *format, std::__cxx11::string path)
+SDL_Surface *loadAndOptimizeSurface(SDL_PixelFormat *format, std::string path)
 {
   //Load image at specified path
     SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
@@ -26,7 +27,7 @@ SDL_Surface *loadAndOptimizeSurface(SDL_PixelFormat *format, std::__cxx11::strin
     }
 }
 
-SpriteSheet::SpriteSheet(SDL_PixelFormat *format, std::__cxx11::string path)
+SpriteSheet::SpriteSheet(SDL_PixelFormat *format, std::string path)
 {
   spriteSurface = loadAndOptimizeSurface(format, path);
   activeSpriteIndex = 0;
@@ -38,9 +39,9 @@ void SpriteSheet::AddSprite(SDL_Rect* sprite)
   sprites.push_back(sprite);
 }
 
-void SpriteSheet::AddSpriteAction(std::__cxx11::string name, std::vector< size_t > spriteIndices)
+void SpriteSheet::AddSpriteAction(std::string name, std::vector< size_t > spriteIndices)
 {
-  spriteActionsByName.insert(name, spriteIndices);
+  spriteActionsByName[name] = spriteIndices;
 }
 
 void SpriteSheet::AddSpriteRow(SDL_Rect* firstSprite, size_t numSprites)
@@ -52,7 +53,7 @@ void SpriteSheet::AddSpriteRow(SDL_Rect* firstSprite, size_t numSprites)
   }
 }
 
-SDL_Surface* SpriteSheet::GetActiveSprite()
+SDL_Rect* SpriteSheet::GetActiveSprite()
 {
   if(activeSpriteIndex < 0 || activeSpriteIndex >= sprites.size())
   {
