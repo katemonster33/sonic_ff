@@ -15,9 +15,11 @@ find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image REQUIRED)
 
 # Add source to this project's executable.
-add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp")
+add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp" "Actor.cpp" "Actor.h")
 target_link_libraries(sonic_ff PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2_image::SDL2_image)
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/sprites/sonic3.png
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sprites/)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET sonic_ff PROPERTY CXX_STANDARD 20)

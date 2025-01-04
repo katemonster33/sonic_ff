@@ -3,6 +3,7 @@
 #include <string>
 #include <SDL2/SDL_image.h>
 
+
 SDL_Surface *loadAndOptimizeSurface(SDL_PixelFormat *format, std::string path)
 {
   //Load image at specified path

@@ -47,7 +47,7 @@ int __cdecl main(int argc, char **argv) {
   SDL_Window * window = nullptr;
   SDL_Surface* screenSurface = nullptr;
   SDL_Surface* spriteSheet = nullptr;
-  if(!init(window, screenSurface) || !loadSurface(screenSurface, "../sprites/sonic3.png", spriteSheet))
+  if(!init(window, screenSurface) || !loadSurface(screenSurface, "./sprites/sonic3.png", spriteSheet))
   {
     SDL_Quit();
     std::cout << "SDL init failed." << std::endl;
