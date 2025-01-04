@@ -43,7 +43,7 @@ bool loadSurface( SDL_Surface* gScreenSurface, std::string path, SDL_Surface*& o
     return true;
 }
 
-int __cdecl main(int argc, char **argv) {
+int main(int argc, char **argv) {
   SDL_Window * window = nullptr;
   SDL_Surface* screenSurface = nullptr;
   SDL_Surface* spriteSheet = nullptr;
@@ -73,9 +73,4 @@ int __cdecl main(int argc, char **argv) {
   SDL_Quit();
 
   return 0;
-}
-
-int __cdecl main()
-{
-    return main(0, NULL);
 }
