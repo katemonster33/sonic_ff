@@ -4,17 +4,17 @@
 
 bool init(SDL_Window *&window, SDL_Surface *&screenSurface)
 {
-  if(SDL_Init( SDL_INIT_VIDEO ) < 0) return false;
+    if(SDL_Init( SDL_INIT_VIDEO ) < 0) return false;
   
-  window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_SHOWN);
   
-  if(window == NULL) return false;
+    if(window == NULL) return false;
   
-  if(!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) return false;
+    if(!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) return false;
   
-  screenSurface = SDL_GetWindowSurface( window );
+    screenSurface = SDL_GetWindowSurface( window );
   
-  return true;
+    return true;
 }
 
 bool loadSurface( SDL_Surface* gScreenSurface, std::string path, SDL_Surface*& outputSurface )
@@ -24,7 +24,7 @@ bool loadSurface( SDL_Surface* gScreenSurface, std::string path, SDL_Surface*& o
     if( loadedSurface == NULL )
     {
         std::cout << "Unable to load image " << path.c_str() << "! SDL_image Error: " << IMG_GetError() << std::endl;
-	return false;
+	    return false;
     }
     else
     {
@@ -43,7 +43,7 @@ bool loadSurface( SDL_Surface* gScreenSurface, std::string path, SDL_Surface*& o
     return true;
 }
 
-int main(int argc, char **argv) {
+int __cdecl main(int argc, char **argv) {
   SDL_Window * window = nullptr;
   SDL_Surface* screenSurface = nullptr;
   SDL_Surface* spriteSheet = nullptr;
@@ -73,4 +73,9 @@ int main(int argc, char **argv) {
   SDL_Quit();
 
   return 0;
+}
+
+int __cdecl main()
+{
+    return main(0, NULL);
 }
