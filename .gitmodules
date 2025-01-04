@@ -1,0 +1,3 @@
+[submodule "SimpleJSON"]
+	path = SimpleJSON
+	url = https://github.com/nbsdx/SimpleJSON.git
