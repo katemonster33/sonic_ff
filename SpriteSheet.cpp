@@ -67,8 +67,3 @@ bool SpriteSheet::HasUpdate(uint32_t millis)
 {
   return false;
 }
-
-
-
-
-

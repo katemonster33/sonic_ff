@@ -1,4 +1,5 @@
 #include "SpriteSheet.h"
+#include "ActorState.h"
 
 struct Bounds
 {
@@ -10,9 +11,12 @@ struct Bounds
 
 class Actor
 {
+	ActorState state;
 	SpriteSheet *sheet;
 	Bounds bounds;
 	bool visible;
 public:
 	Actor( SpriteSheet* sheet );
+
+	ActorState GetState() { return state; }
 };

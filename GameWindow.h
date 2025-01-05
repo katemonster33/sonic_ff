@@ -8,9 +8,7 @@ class GameWindow
     std::vector<Actor*> actors;
 
 public:
-    GameWindow()
-    {
-    }
+    GameWindow();
 
     void drawFrame();
-}
+};
