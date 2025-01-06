@@ -1,3 +1,5 @@
+#pragma once
+
 enum class ActorState
 {
     Invalid,
@@ -5,4 +7,6 @@ enum class ActorState
     Idle,
     Running,
     Attacking,
+    LookingUp,
+    Crouching
 };

@@ -2,6 +2,24 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "ActorState.h"
+
+struct SpriteGroup
+{
+  ActorState groupState;
+  std::vector<SDL_Rect> sprites;
+};
+
+struct SpriteConfig
+{
+  std::string name;
+  std::vector<SpriteGroup> spriteGroups;
+};
+
+struct SpriteSheetConfig
+{
+  std::vector<SpriteConfig> sprites;
+};
 
 class SpriteSheet
 {

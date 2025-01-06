@@ -3,6 +3,40 @@
 #include <string>
 #include <SDL2/SDL_image.h>
 
+SpriteConfig sonicSpriteCfg{
+  "Sonic",
+  {
+    {
+      ActorState::Default,
+      {
+        { 0, 0, 30, 42 }
+      }
+    },
+    {
+      ActorState::Idle,
+      {
+        { 30, 0, 31, 42 },
+        { 61, 0, 32, 42 },
+        { 94, 0, 33, 42 },
+        { 127, 0, 33, 42 },
+        { 160, 0, 33, 42 },
+        { 193, 0, 33, 42 },
+        { 226, 0, 34, 42 },
+        { 260, 0, 37, 42 },
+        { 297, 0, 34, 42 },
+        { 330, 0, 33, 42 },
+        { 363, 0, 28, 42 },
+        { 391, 0, 28, 42 }
+      }
+    },
+    { 
+      ActorState::LookingUp, 
+      {
+        { 419, 0, 33, 42 }, { 452, 0, 28, 42 }
+      }
+    }
+  }
+};
 
 SDL_Surface *loadAndOptimizeSurface(SDL_PixelFormat *format, std::string path)
 {

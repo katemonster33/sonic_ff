@@ -1,9 +1,9 @@
 {
   "sprite_groups": [
+    { "group_name": "default", "sprites": [ [ 0, 0, 30, 42 ] ] },
     {
-      "group_name": "default",
+      "group_name": "idle",
       "sprites": [
-        [ 0, 0, 30, 42 ],
         [ 30, 0, 31, 42 ],
         [ 61, 0, 32, 42 ],
         [ 94, 0, 33, 42 ],
