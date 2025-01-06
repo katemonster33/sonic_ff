@@ -1,8 +1,8 @@
-#include <SDL2/SDL.h>
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include "ActorState.h"
+#include <SDL2/SDL_render.h>
 
 struct SpriteGroup
 {
@@ -23,7 +23,7 @@ struct SpriteSheetConfig
 
 class SpriteSheet
 {
-  SDL_Surface *spriteSurface;
+  SDL_Texture *spriteSurface;
   size_t activeSpriteIndex;
   std::vector<SDL_Rect*> sprites;
   std::unordered_map<std::string, std::vector<size_t>> spriteActionsByName;
