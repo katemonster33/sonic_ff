@@ -40,12 +40,14 @@ SpriteConfig sonicSpriteCfg{
   }
 };
 
-GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer)
+GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, size_t sizex, size_t sizey) : 
+    size_x(sizex),
+    size_y(sizey)
 {
     this->window = window;
     this->renderer = renderer;
 
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(this, "sprites/sonic3.png")));
+    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(this, "sprites/sonic3.png"), 50, 50));
 }
 
 GameWindow::~GameWindow()
@@ -61,6 +63,7 @@ GameWindow *GameWindow::Create()
 
     if(SDL_Init( SDL_INIT_VIDEO ) < 0) return nullptr;
   
+    
     SDL_Window *window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_SHOWN);
   
     if(window == NULL) 
@@ -83,7 +86,15 @@ GameWindow *GameWindow::Create()
         SDL_DestroyWindow(window);
         return nullptr;
     }
-    return new GameWindow(window, renderer);
+    return new GameWindow(window, renderer, 1280, 720);
+}
+
+void GameWindow::handle_input(const SDL_Event& event)
+{
+    for (Actor* actor : actors)
+    {
+        actor->handle_input(event);
+    }
 }
 
 void GameWindow::drawFrame()

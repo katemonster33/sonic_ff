@@ -8,8 +8,10 @@
 
 class Actor
 {
-    size_t x;
-    size_t y;
+    int x;
+    int y;
+    float x_velocity;
+    float y_velocity;
 	ActorState state;
     Texture* texture;
     size_t spriteGroupIndex;
@@ -17,10 +19,10 @@ class Actor
     const SpriteGroup* activeGroup;
 	bool visible;
 public:
-	Actor( SpriteConfig *spriteConfig, Texture* texture, size_t x, size_t y);
+	Actor( SpriteConfig *spriteConfig, Texture* texture, size_t startx, size_t starty);
     ~Actor();
 
-    void handle_input(SDL_Event* event);
+    void handle_input(const SDL_Event& event);
 
 	ActorState GetState() { return state; }
 

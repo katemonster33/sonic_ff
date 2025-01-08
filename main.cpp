@@ -4,25 +4,30 @@
 #include "GameWindow.h"
 //#include "SimpleJSON/json.hpp"
 
-int main(int argc, char **argv) {
-  GameWindow* gameWindow = GameWindow::Create();
+int main(int argc, char** argv) {
+    GameWindow* gameWindow = GameWindow::Create();
 
-  if(!gameWindow)
-  {
-    SDL_Quit();
-    std::cout << "SDL init failed." << std::endl;
-    return -1;
-  }
-  bool game_open = true;
-  SDL_Event event;
-  while(game_open)
-  {
-    SDL_PollEvent(&event);
-    if(event.type == SDL_QUIT){
-      break;
+    if (!gameWindow)
+    {
+        SDL_Quit();
+        std::cout << "SDL init failed." << std::endl;
+        return -1;
     }
-    gameWindow->drawFrame();
-    SDL_Delay(16);
-  }
-  return 0;
+    bool game_open = true;
+    SDL_Event event;
+    while (game_open)
+    {
+        while (SDL_PollEvent(&event) > 0)
+        {
+            if (event.type == SDL_QUIT) {
+                delete gameWindow;
+                return 0;
+            }
+            gameWindow->handle_input(event);
+        }
+        gameWindow->drawFrame();
+        SDL_Delay(16);
+    }
+    delete gameWindow;
+    return 0;
 }
