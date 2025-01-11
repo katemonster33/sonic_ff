@@ -68,6 +68,11 @@ void Actor::handle_input(const SDL_Event& event)
     }
 }
 
+CollisionType Actor::check_collision(GameWindow* parentWindow)
+{
+    return CollisionType::None;
+}
+
 void Actor::draw(GameWindow* parentWindow)
 {
     if (activeGroup == nullptr) {
@@ -75,6 +80,11 @@ void Actor::draw(GameWindow* parentWindow)
     }
     const SDL_Rect &spriteRect = activeGroup->sprites[spriteGroupIndex];
     texture->draw(spriteRect.x, spriteRect.y, x, y, spriteRect.w, spriteRect.h);
+    CollisionType colType = check_collision(parentWindow);
+    if (colType == CollisionType::X)
+    {
+        x_velocity = 0.0f;
+    }
     x += x_velocity;
     if (x > int(parentWindow->GetSizeX() - spriteRect.w))
     {

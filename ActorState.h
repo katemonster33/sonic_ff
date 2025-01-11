@@ -8,5 +8,7 @@ enum class ActorState
     Running,
     Attacking,
     LookingUp,
-    Crouching
+    Crouching,
+    Hurt,
+    Dead
 };

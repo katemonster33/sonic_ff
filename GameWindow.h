@@ -9,6 +9,7 @@ class GameWindow
     size_t size_x;
     size_t size_y;
     std::vector<class Actor*> actors;
+    std::vector<class Actor*> actors;
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, size_t sizex, size_t sizey);
 public:

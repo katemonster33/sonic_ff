@@ -6,6 +6,13 @@
 #include "GameWindow.h"
 #include <SDL2/SDL_events.h>
 
+enum class CollisionType
+{
+    None,
+    X,
+    Y
+};
+
 class Actor
 {
     int x;
@@ -26,5 +33,6 @@ public:
 
 	ActorState GetState() { return state; }
 
+    CollisionType check_collision(GameWindow *parentWindow);
     void draw(GameWindow *parentWindow);
 };
