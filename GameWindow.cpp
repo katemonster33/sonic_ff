@@ -3,7 +3,8 @@
 #include "Actor.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-
+#include "MapLayer.h"
+#include <tmxlite/Map.hpp>
 
 SpriteConfig sonicSpriteCfg{
   "Sonic",
@@ -40,14 +41,39 @@ SpriteConfig sonicSpriteCfg{
   }
 };
 
-GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, size_t sizex, size_t sizey) : 
+GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey) : 
     size_x(sizex),
-    size_y(sizey)
+    size_y(sizey),
+    map(map)
 {
     this->window = window;
     this->renderer = renderer;
 
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(this, "sprites/sonic3.png"), 50, 50));
+    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "sprites/sonic3.png"), 50, 50));
+
+    //load the textures as they're shared between layers
+    const auto& tileSets = map.getTilesets();
+    assert(!tileSets.empty());
+    for (const auto& ts : tileSets)
+    {
+        Texture* text = Texture::Create(renderer, ts.getImagePath());
+        if (text)
+        {
+            textures.emplace_back(text);
+        }
+    }
+
+    //load the layers
+    const auto& mapLayers = map.getLayers();
+    for (auto i = 0u; i < mapLayers.size(); ++i)
+    {
+        if (mapLayers[i]->getType() == tmx::Layer::Type::Tile)
+        {
+            renderLayers.emplace_back(std::make_unique<MapLayer>());
+            renderLayers.back()->create(map, i, textures); //just cos we're using C++14
+        }
+    }
+    
 }
 
 GameWindow::~GameWindow()
@@ -86,7 +112,18 @@ GameWindow *GameWindow::Create()
         SDL_DestroyWindow(window);
         return nullptr;
     }
-    return new GameWindow(window, renderer, 1280, 720);
+
+    std::vector<std::unique_ptr<Texture>> textures;
+    std::vector<std::unique_ptr<MapLayer>> renderLayers;
+    tmx::Map map;
+    if (!map.load("assets/demo.tmx"))
+    {
+        SDL_Log("Failed to load map: %s", SDL_GetError());
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        return nullptr;
+    }
+    return new GameWindow(window, renderer, map, 1280, 720);
 }
 
 void GameWindow::handle_input(const SDL_Event& event)
@@ -100,6 +137,10 @@ void GameWindow::handle_input(const SDL_Event& event)
 void GameWindow::drawFrame()
 {
     SDL_RenderClear(renderer);
+    for (const auto& l : renderLayers)
+    {
+        l->draw(renderer);
+    }
     for (Actor* actor : actors)
     {
         actor->draw(this);

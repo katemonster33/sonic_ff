@@ -1,17 +1,25 @@
 #pragma once
 
 #include <vector>
+#include <memory>
+
+namespace tmx
+{
+    class Map;
+}
 
 class GameWindow
 {
     struct SDL_Window *window;
     struct SDL_Renderer *renderer;
+    std::vector<std::unique_ptr<class MapLayer>> renderLayers;
+    std::vector<std::unique_ptr<class Texture>> textures;
+    tmx::Map& map;
     size_t size_x;
     size_t size_y;
     std::vector<class Actor*> actors;
-    std::vector<class Actor*> actors;
 
-    GameWindow(SDL_Window *window, SDL_Renderer *renderer, size_t sizex, size_t sizey);
+    GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
 public:
     static GameWindow *Create();
     ~GameWindow();

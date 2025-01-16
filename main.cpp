@@ -2,6 +2,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include "GameWindow.h"
+#include "Texture.h"
+#include "MapLayer.h"
+#include <tmxlite/Map.hpp>
 //#include "SimpleJSON/json.hpp"
 
 int main(int argc, char** argv) {
@@ -15,6 +18,7 @@ int main(int argc, char** argv) {
     }
     bool game_open = true;
     SDL_Event event;
+    SDL_SetRenderDrawColor(gameWindow->getRenderer(), 100, 149, 237, 255);
     while (game_open)
     {
         while (SDL_PollEvent(&event) > 0)

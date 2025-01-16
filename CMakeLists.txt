@@ -1,6 +1,10 @@
 ﻿# CMakeList.txt : CMake project for sonic_ff, include source and define
 # project specific logic here.
 #
+
+#add_subdirectory(tmxparser/thirdparty/tinyxml2)
+#add_subdirectory(tmxparser)
+
 cmake_minimum_required (VERSION 3.10)
 
 # Enable Hot Reload for MSVC compilers if supported.
@@ -13,10 +17,30 @@ project ("sonic_ff")
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image REQUIRED)
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(tmxlite REQUIRED tmxlite)
 
 # Add source to this project's executable.
-add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "Terrain.cpp" "Terrain.h")
-target_link_libraries(sonic_ff PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2_image::SDL2_image)
+add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "Terrain.cpp" "MapLayer.cpp")
+target_include_directories(sonic_ff PUBLIC ${tmxlite_INCLUDEDIR})
+target_link_libraries(sonic_ff PRIVATE ${tmxlite_LINK_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image::SDL2_image)
+target_compile_definitions(sonic_ff PUBLIC -D_CRT_SECURE_NO_WARNINGS)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/demo.tmx
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/platform.tmx
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/images/tilemap/platform.tsx
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/images/tilemap/)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/images/tilemap/tileset.png
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/images/tilemap/)
+     
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/images/tilemap/tileset02.png
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/images/tilemap/)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/sprites/sonic3.png
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sprites/)
