@@ -44,7 +44,9 @@ SpriteConfig sonicSpriteCfg{
 GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey) : 
     size_x(sizex),
     size_y(sizey),
-    map(map)
+    map(map),
+    curTime(0),
+    lastFrameTime(0)
 {
     this->window = window;
     this->renderer = renderer;
@@ -95,6 +97,7 @@ GameWindow *GameWindow::Create()
     if(window == NULL) 
     {
         SDL_Log("Failed to create window: %s", SDL_GetError());
+        SDL_Quit();
         return nullptr;
     }
   
@@ -104,12 +107,15 @@ GameWindow *GameWindow::Create()
     {
         SDL_DestroyWindow(window);
         SDL_Log("Failed to create renderer: %s", SDL_GetError());
+        SDL_Quit();
         return nullptr;
     }
     if(!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) 
     {
+        SDL_Log("Failed to initialize SDL_Image: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
+        SDL_Quit();
         return nullptr;
     }
 

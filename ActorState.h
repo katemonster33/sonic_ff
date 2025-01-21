@@ -10,5 +10,19 @@ enum class ActorState
     LookingUp,
     Crouching,
     Hurt,
+    Falling,
     Dead
+};
+
+enum ActorIntent
+{
+    None = 0,
+    MoveLeft = 1,
+    MoveRight = 2,
+    MoveForward = 4,
+    MoveBack = 8,
+    Jump = 16,
+    Attack = 32,
+    Crouch = 64,
+
 };
