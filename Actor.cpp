@@ -1,14 +1,19 @@
 #include "Actor.h"
 
-Actor::Actor(SpriteConfig* spriteConfigz, Texture *texture, size_t startx, size_t starty ) : 
+Actor::Actor(SpriteConfig* spriteConfigz, Texture *texture, size_t startx, size_t starty, size_t startz ) : 
     spriteConfig(spriteConfig),
     texture(texture),
     x(startx),
     y(starty),
+    z(startz),
     x_velocity(0.0f),
     y_velocity(0.0f),
+    z_velocity(0.0f),
+    jump_height(0),
+    jump_velocity(0.0f),
     state(ActorState::Default),
-    lastFrameState(ActorState::Default)
+    lastFrameState(ActorState::Default),
+    intent(NoIntent)
 {
     visible = true;
     spriteGroupIndex = 0;
@@ -48,6 +53,8 @@ void Actor::handle_input(const SDL_Event& event)
             intent |= MoveRight;
             state = ActorState::Running;
             break;
+        case SDLK_SPACE:
+            intent |= Jump;
         }
         break;
     case SDL_KEYUP:
@@ -65,6 +72,8 @@ void Actor::handle_input(const SDL_Event& event)
         case SDLK_RIGHT:
             intent &= ~MoveRight;
             break;
+        case SDLK_SPACE:
+            intent &= ~Jump;
         }
         break;
     }
@@ -85,24 +94,116 @@ void Actor::handle_input(const SDL_Event& event)
 
 CollisionType Actor::check_collision(GameWindow* parentWindow)
 {
-    return CollisionType::None;
+    return CollisionType::NoCollision;
 }
 
-void Actor::draw(GameWindow* parentWindow, time_t frameTimeDelta)
+// helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
+const double c_x_ratio = sqrt(5);
+
+void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
 {
     if (activeGroup == nullptr) {
         activeGroup = &spriteConfig->spriteGroups[0];
     }
     const SDL_Rect &spriteRect = activeGroup->sprites[spriteGroupIndex];
-    texture->draw(spriteRect.x, spriteRect.y, x, y, spriteRect.w, spriteRect.h);
+    int actualX = x + (z / c_x_ratio);
+    int actualY = (z * 2 / c_x_ratio);
+    texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
-    if (colType & CollisionType::Left || colType & CollisionType::Right)
+    if (colType == NoCollision)
     {
-        x_velocity = 0.0f;
+        if (intent == MoveLeft)
+        {
+            x_velocity -= 0.1f;
+            if (x_velocity < -5.0f)
+            {
+                x_velocity = -5.0f;
+            }
+        }
+        else if (x_velocity < 0.0f)
+        {
+            x_velocity += 0.1f;
+        }
+        if (intent == MoveRight)
+        {
+            x_velocity += 0.1f;
+            if (x_velocity > 5.0f)
+            {
+                x_velocity = 5.0f;
+            }
+        }
+        else if (x_velocity > 0.0f)
+        {
+            x_velocity -= 0.1f;
+        }
+        if (intent == MoveBack)
+        {
+            z_velocity -= 0.1f;
+            if (z_velocity < 1.0f)
+            {
+                z_velocity = 1.0f;
+            }
+        }
+        else if(z_velocity < 0.0f)
+        {
+            z_velocity += 0.1f;
+        }
+        if (intent == MoveForward)
+        {
+            z_velocity += 0.1f;
+            if (z_velocity > 1.0f)
+            {
+                z_velocity = 1.0f;
+            }
+        }
+        else if(z_velocity > 0.0f)
+        {
+            z_velocity -= 0.1f;
+        }
     }
-    if (colType & CollisionType::Up || colType & CollisionType::Down)
+    else
     {
-        y_velocity = z_velocity = 0;
+        if (colType & CollisionType::Left || colType & CollisionType::Right)
+        {
+            x_velocity = 0.0f;
+        }
+        if (colType & CollisionType::Up || colType & CollisionType::Down)
+        {
+            y_velocity = 0;
+        }
+    }
+
+    if (intent == Jump)
+    {
+        if (jump_height < 3)
+        {
+            if (jump_velocity < 10.0f)
+            {
+                jump_velocity += 1.0f;
+            }
+        }
+        else if (jump_height >= 8)
+        {
+            jump_velocity -= 0.4f;
+        }
+        else if (y <= 0 && jump_velocity <= 0.0f)
+        {
+            jump_height = 0;
+            jump_velocity = 0.0f;
+        }
+    }
+    else if (jump_height > 0.0f)
+    {
+        if (colType & CollisionType::Down)
+        {
+            y += jump_height;
+            jump_height = 0;
+            jump_velocity = 0.0f;
+        }
+        else if (jump_velocity > -10.0f)
+        {
+            jump_velocity -= 0.4f;
+        }
     }
     x += x_velocity;
     if (x > int(parentWindow->GetSizeX() - spriteRect.w))
@@ -111,7 +212,11 @@ void Actor::draw(GameWindow* parentWindow, time_t frameTimeDelta)
     }
     else if (x < 0)
     {
-        x = 0.0f;
+        x = 0;
+    }
+    if (z < 0)
+    {
+        z = 0;
     }
     if (y_velocity != 0.0f)
     {

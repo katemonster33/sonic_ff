@@ -11,17 +11,21 @@ const float MAX_PLAYER_Z_VELOCITY = 2.0f;
 
 enum CollisionType
 {
-    None,
+    NoCollision,
     Left = 1,
     Right = 2,
     Up = 4,
-    Down = 8
+    Down = 8,
+    Front = 16,
+    Back = 32
 };
 
 class Actor
 {
     int x;
     int y;
+    int jump_height;
+    float jump_velocity;
     int z;
     float x_velocity;
     float y_velocity;
@@ -35,7 +39,7 @@ class Actor
     const SpriteGroup* activeGroup;
 	bool visible;
 public:
-	Actor( SpriteConfig *spriteConfig, Texture* texture, size_t startx, size_t starty);
+	Actor( SpriteConfig *spriteConfig, Texture* texture, size_t startx, size_t starty, size_t startz);
     ~Actor();
 
     void handle_input(const SDL_Event& event);
@@ -43,5 +47,5 @@ public:
 	ActorState GetState() { return state; }
 
     CollisionType check_collision(GameWindow *parentWindow);
-    void draw(GameWindow *parentWindow, time_t frameTimeDelta);
+    void draw(GameWindow *parentWindow, uint64_t frameTimeDelta);
 };

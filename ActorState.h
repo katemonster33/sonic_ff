@@ -16,7 +16,7 @@ enum class ActorState
 
 enum ActorIntent
 {
-    None = 0,
+    NoIntent = 0,
     MoveLeft = 1,
     MoveRight = 2,
     MoveForward = 4,

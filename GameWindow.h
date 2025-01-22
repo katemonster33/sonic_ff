@@ -18,8 +18,8 @@ class GameWindow
     size_t size_x;
     size_t size_y;
     std::vector<class Actor*> actors;
-    time_t curTime;
-    time_t lastFrameTime;
+    uint64_t curTime;
+    uint64_t lastFrameTime;
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
 public:

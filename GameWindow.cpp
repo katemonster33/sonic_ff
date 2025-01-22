@@ -51,7 +51,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     this->window = window;
     this->renderer = renderer;
 
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "sprites/sonic3.png"), 50, 50));
+    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "sprites/sonic3.png"), 50, 0, 50));
 
     //load the textures as they're shared between layers
     const auto& tileSets = map.getTilesets();
@@ -94,7 +94,7 @@ GameWindow *GameWindow::Create()
     
     SDL_Window *window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_SHOWN);
   
-    if(window == NULL) 
+    if(window == nullptr) 
     {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         SDL_Quit();
@@ -142,6 +142,8 @@ void GameWindow::handle_input(const SDL_Event& event)
 
 void GameWindow::drawFrame()
 {
+    curTime = SDL_GetTicks64();
+    uint64_t frameDeltaTime = lastFrameTime - curTime;
     SDL_RenderClear(renderer);
     for (const auto& l : renderLayers)
     {
@@ -149,7 +151,8 @@ void GameWindow::drawFrame()
     }
     for (Actor* actor : actors)
     {
-        actor->draw(this);
+        actor->draw(this, frameDeltaTime);
     }
     SDL_RenderPresent(renderer);
+    lastFrameTime = curTime;
 }
