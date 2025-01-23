@@ -107,7 +107,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
     }
     const SDL_Rect &spriteRect = activeGroup->sprites[spriteGroupIndex];
     int actualX = x + (z / c_x_ratio);
-    int actualY = (z * 2 / c_x_ratio);
+    int actualY = (z * 2 / c_x_ratio) - jump_height - y;
     texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
     if (colType == NoCollision || colType == Down)
@@ -173,7 +173,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
         }
     }
 
-    if (intent == Jump)
+    if (intent & Jump)
     {
         if (jump_height < 3)
         {
@@ -192,7 +192,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
             jump_velocity = 0.0f;
         }
     }
-    else if (jump_height > 0.0f)
+    else if (jump_velocity > 0.0f)
     {
         if (colType & CollisionType::Down)
         {
@@ -205,6 +205,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
             jump_velocity -= 0.4f;
         }
     }
+    jump_height += jump_velocity;
     x += x_velocity;
     if (x > int(parentWindow->GetSizeX() - spriteRect.w))
     {
