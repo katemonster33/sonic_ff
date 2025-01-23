@@ -1,6 +1,6 @@
 #include "Actor.h"
 
-Actor::Actor(SpriteConfig* spriteConfigz, Texture *texture, size_t startx, size_t starty, size_t startz ) : 
+Actor::Actor(SpriteConfig* spriteConfig, Texture *texture, size_t startx, size_t starty, size_t startz ) : 
     spriteConfig(spriteConfig),
     texture(texture),
     x(startx),
@@ -110,9 +110,9 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
     int actualY = (z * 2 / c_x_ratio);
     texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
-    if (colType == NoCollision)
+    if (colType == NoCollision || colType == Down)
     {
-        if (intent == MoveLeft)
+        if (intent & MoveLeft)
         {
             x_velocity -= 0.1f;
             if (x_velocity < -5.0f)
@@ -120,11 +120,11 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
                 x_velocity = -5.0f;
             }
         }
-        else if (x_velocity < 0.0f)
+        else if (x_velocity < -0.1f)
         {
             x_velocity += 0.1f;
         }
-        if (intent == MoveRight)
+        if (intent & MoveRight)
         {
             x_velocity += 0.1f;
             if (x_velocity > 5.0f)
@@ -132,23 +132,23 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
                 x_velocity = 5.0f;
             }
         }
-        else if (x_velocity > 0.0f)
+        else if (x_velocity > 0.1f)
         {
             x_velocity -= 0.1f;
         }
-        if (intent == MoveBack)
+        if (intent & MoveBack)
         {
             z_velocity -= 0.1f;
-            if (z_velocity < 1.0f)
+            if (z_velocity < -1.0f)
             {
-                z_velocity = 1.0f;
+                z_velocity = -1.0f;
             }
         }
-        else if(z_velocity < 0.0f)
+        else if(z_velocity < -0.1f)
         {
             z_velocity += 0.1f;
         }
-        if (intent == MoveForward)
+        if (intent & MoveForward)
         {
             z_velocity += 0.1f;
             if (z_velocity > 1.0f)
@@ -156,7 +156,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
                 z_velocity = 1.0f;
             }
         }
-        else if(z_velocity > 0.0f)
+        else if(z_velocity > 0.1f)
         {
             z_velocity -= 0.1f;
         }
@@ -214,6 +214,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
     {
         x = 0;
     }
+    z += z_velocity;
     if (z < 0)
     {
         z = 0;
