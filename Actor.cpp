@@ -1,6 +1,6 @@
 #include "Actor.h"
 
-Actor::Actor(SpriteConfig* spriteConfig, Texture *texture, size_t startx, size_t starty, size_t startz ) : 
+Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int startx, int starty, int startz) :
     spriteConfig(spriteConfig),
     texture(texture),
     x(startx),
@@ -9,15 +9,16 @@ Actor::Actor(SpriteConfig* spriteConfig, Texture *texture, size_t startx, size_t
     x_velocity(0.0f),
     y_velocity(0.0f),
     z_velocity(0.0f),
+    height(-1),
     jump_height(0),
     jump_velocity(0.0f),
     state(ActorState::Default),
     lastFrameState(ActorState::Default),
-    intent(NoIntent)
+    intent(NoIntent),
+    visible(true),
+    spriteGroupIndex(0),
+    activeGroup(nullptr)
 {
-    visible = true;
-    spriteGroupIndex = 0;
-    activeGroup = nullptr;
 }
 
 Actor::~Actor()
@@ -34,46 +35,75 @@ void Actor::handle_input(const SDL_Event& event)
         switch (event.key.keysym.sym)
         {
         case SDLK_UP:
+        case SDLK_w:
             intent &= ~MoveForward;
             intent |= MoveBack;
-            state = ActorState::Running;
+            if (!(intent & Attack))
+            {
+                state = ActorState::Running;
+            }
             break;
         case SDLK_DOWN:
+        case SDLK_s:
             intent &= ~MoveBack;
             intent |= MoveForward;
-            state = ActorState::Running;
+            if (!(intent & Attack))
+            {
+                state = ActorState::Running;
+            }
             break;
         case SDLK_LEFT:
+        case SDLK_a:
             intent &= ~MoveRight;
             intent |= MoveLeft;
-            state = ActorState::Running;
+            if (!(intent & Attack))
+            {
+                state = ActorState::Running;
+            }
             break;
         case SDLK_RIGHT:
+        case SDLK_d:
             intent &= ~MoveLeft;
             intent |= MoveRight;
-            state = ActorState::Running;
+            if (!(intent & Attack))
+            {
+                state = ActorState::Running;
+            }
+            break;
+        case SDLK_LCTRL:
+            intent |= Attack; 
+            state = ActorState::Attacking;
             break;
         case SDLK_SPACE:
             intent |= Jump;
+            break;
         }
         break;
     case SDL_KEYUP:
         switch (event.key.keysym.sym)
         {
         case SDLK_UP:
+        case SDLK_w:
             intent &= ~MoveBack;
             break;
-        case SDLK_DOWN: 
+        case SDLK_DOWN:
+        case SDLK_s:
             intent &= ~MoveForward;
             break;
         case SDLK_LEFT:
+        case SDLK_a:
             intent &= ~MoveLeft;
             break;
         case SDLK_RIGHT:
+        case SDLK_d:
             intent &= ~MoveRight;
+            break;
+        case SDLK_LCTRL:
+            intent &= Attack;
             break;
         case SDLK_SPACE:
             intent &= ~Jump;
+            break;
         }
         break;
     }
@@ -102,12 +132,15 @@ const double c_x_ratio = sqrt(5);
 
 void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
 {
+    if (height == -1) {
+        height = parentWindow->getHeight(x, y);
+    }
     if (activeGroup == nullptr) {
         activeGroup = &spriteConfig->spriteGroups[0];
     }
     const SDL_Rect &spriteRect = activeGroup->sprites[spriteGroupIndex];
-    int actualX = x + (z / c_x_ratio);
-    int actualY = (z * 2 / c_x_ratio) - jump_height - y;
+    int actualX = x + int(z / c_x_ratio);
+    int actualY = int(z * 2 / c_x_ratio) - jump_height - y;
     texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
     if (colType == NoCollision || colType == Down)

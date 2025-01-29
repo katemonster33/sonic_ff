@@ -24,6 +24,7 @@ class Actor
 {
     int x;
     int y;
+    int height;
     int jump_height;
     float jump_velocity;
     int z;
@@ -39,7 +40,7 @@ class Actor
     const SpriteGroup* activeGroup;
 	bool visible;
 public:
-	Actor( SpriteConfig *spriteConfig, Texture* texture, size_t startx, size_t starty, size_t startz);
+	Actor( SpriteConfig *spriteConfig, Texture* texture, int startx, int starty, int startz);
     ~Actor();
 
     void handle_input(const SDL_Event& event);

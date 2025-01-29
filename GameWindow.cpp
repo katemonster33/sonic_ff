@@ -86,9 +86,16 @@ GameWindow::~GameWindow()
     SDL_Quit();
 }
 
+int GameWindow::getHeight(int x, int y)
+{
+    size_t tile_x = x / 16;
+    size_t tile_y = y / 16;
+    size_t idx = (x / 16) * map.getTileSize().x + (y / 16);
+    map.getTilesets()[0].getTiles()[idx];
+}
+
 GameWindow *GameWindow::Create()
 {
-
     if(SDL_Init( SDL_INIT_VIDEO ) < 0) return nullptr;
   
     

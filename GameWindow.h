@@ -31,5 +31,6 @@ public:
     size_t GetSizeY() { return size_y; }
 
     void handle_input(const union SDL_Event& event);
+    int getHeight(int x, int y);
     void drawFrame();
 };
