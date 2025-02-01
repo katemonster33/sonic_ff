@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.1" name="robotropolis" tilewidth="160" tileheight="160" tilecount="27" columns="0" fillmode="preserve-aspect-fit">
+<tileset version="1.10" tiledversion="1.11.1" name="robotropolis" tilewidth="80" tileheight="160" tilecount="26" columns="0" fillmode="preserve-aspect-fit">
  <grid orientation="orthogonal" width="16" height="16"/>
  <tile id="0">
   <image source="../sprites/robotropolis/wall_blue.png" width="16" height="16"/>
  </tile>
  <tile id="1">
   <image source="../sprites/robotropolis/wall_corner.png" width="16" height="16"/>
- </tile>
- <tile id="2">
-  <image source="../sprites/robotropolis/wall_dark.png" width="160" height="96"/>
  </tile>
  <tile id="3">
   <image source="../sprites/robotropolis/wall_edge.png" width="16" height="16"/>
@@ -33,9 +30,6 @@
  </tile>
  <tile id="10">
   <image source="../sprites/robotropolis/vent_pipe_vert.png" width="16" height="16"/>
- </tile>
- <tile id="11">
-  <image source="../sprites/robotropolis/vent.png" width="64" height="160"/>
  </tile>
  <tile id="12">
   <image source="../sprites/robotropolis/wall_angled.png" width="64" height="16"/>
@@ -81,5 +75,8 @@
  </tile>
  <tile id="26">
   <image source="../sprites/robotropolis/vent_left_pipe.png" width="16" height="64"/>
+ </tile>
+ <tile id="29">
+  <image source="../sprites/robotropolis/vent.png" width="64" height="160"/>
  </tile>
 </tileset>
