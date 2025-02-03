@@ -36,9 +36,10 @@ Encapsulates a texture and vertex array and uses them to draw a map layer
 #include <SDL.h>
 #include <tmxlite/Map.hpp>
 #include <vector>
-
+#include "Actor.h"
 class MapLayer final
 {
+    std::vector<struct Rect3> collisionGeometry;
 public:
     explicit MapLayer();
 

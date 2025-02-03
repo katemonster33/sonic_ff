@@ -88,10 +88,11 @@ GameWindow::~GameWindow()
 
 int GameWindow::getHeight(int x, int y)
 {
-    size_t tile_x = x / 16;
-    size_t tile_y = y / 16;
-    size_t idx = (x / 16) * map.getTileSize().x + (y / 16);
-    map.getTilesets()[0].getTiles()[idx];
+    return 1;
+    //size_t tile_x = x / 16;
+    //size_t tile_y = y / 16;
+    //size_t idx = (x / 16) * map.getTileSize().x + (y / 16);
+    //map.getTilesets()[0].getTiles()[idx];
 }
 
 GameWindow *GameWindow::Create()
@@ -99,7 +100,7 @@ GameWindow *GameWindow::Create()
     if(SDL_Init( SDL_INIT_VIDEO ) < 0) return nullptr;
   
     
-    SDL_Window *window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_SHOWN);
+    SDL_Window *window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 852, 480, SDL_WINDOW_SHOWN);
   
     if(window == nullptr) 
     {
@@ -129,14 +130,14 @@ GameWindow *GameWindow::Create()
     std::vector<std::unique_ptr<Texture>> textures;
     std::vector<std::unique_ptr<MapLayer>> renderLayers;
     tmx::Map map;
-    if (!map.load("assets/demo.tmx"))
+    if (!map.load("assets/robotropolis.tmx"))
     {
         SDL_Log("Failed to load map: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         return nullptr;
     }
-    return new GameWindow(window, renderer, map, 1280, 720);
+    return new GameWindow(window, renderer, map, 852, 480);
 }
 
 void GameWindow::handle_input(const SDL_Event& event)

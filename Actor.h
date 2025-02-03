@@ -20,8 +20,32 @@ enum CollisionType
     Back = 32
 };
 
+struct Rect2
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+struct Rect3 : public Rect2
+{
+    int z;
+    int d;
+};
+
+struct Hitbox
+{
+    int x;
+    int y;
+    int z;
+
+};
+
 class Actor
 {
+    Rect2 spriteRect;
+    Rect3 collisionRect;
     int x;
     int y;
     int height;

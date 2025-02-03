@@ -44,7 +44,16 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/images/tilemap/tileset02.png
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/sprites/sonic3.png
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sprites/)
+     
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/robotropolis.tmx
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/)
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/robotropolis-sheet.tsx
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/)
+     
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/sprites/robotropolis/robotropolis.png
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/sprites/robotropolis)
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET sonic_ff PROPERTY CXX_STANDARD 20)
 endif()
