@@ -51,7 +51,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     this->window = window;
     this->renderer = renderer;
 
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "sprites/sonic3.png"), 50, 0, 50));
+    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), 50, 0, 50));
 
     //load the textures as they're shared between layers
     const auto& tileSets = map.getTilesets();

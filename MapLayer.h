@@ -37,6 +37,24 @@ Encapsulates a texture and vertex array and uses them to draw a map layer
 #include <tmxlite/Map.hpp>
 #include <vector>
 #include "Actor.h"
+#include <unordered_map>
+
+enum class TileType
+{
+    None,
+    Ground,
+    Box,
+    Wall,
+    GroundAngled1,
+    GroundAngled2,
+    GroundAngled3,
+    GroundAngled4,
+    SideWall,
+    SideWallAngled1,
+    SideWallAngled2,
+    SideWallAngled3,
+    SideWallAngled4
+};
 
 struct tripoint
 {
@@ -44,38 +62,36 @@ struct tripoint
     float y;
     float z;
 };
+
 struct TileData
+{
+    tripoint origin;
+    tripoint endpoint;
+    TileType tileType;
+    int id;
+};
+
+struct SurfaceData
 {
     tripoint origin;
     tripoint endpoint;
 };
 
-const TileData ground {{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}};
-const TileData wall {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}};
+const TileData ground {{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, TileType::Ground, 0};
+const TileData wall {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, TileType::Wall, 0};
 
-const TileData box {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
+const TileData box {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}, TileType::Box, 0};
 
-const TileData groundAngled1{{0.0, 0.0, 1.0}, {0.5, 0.0, 0.0}};
+const TileData groundAngled1{{0.0, 0.0, 1.0}, {0.5, 0.0, 0.0}, TileType::GroundAngled1, 0};
 
-const TileData groundAngled2{{0.5, 0.0, 1.0}, {1.0, 0.0, 0.0}};
-
-enum TileType
-{
-    None,
-    Ground,
-    Wall,
-    GroundAngled1,
-    GroundAngled2,
-    GroundAngled3,
-    GroundAngled4,
-    
-}
+const TileData groundAngled2{{0.5, 0.0, 1.0}, {1.0, 0.0, 0.0}, TileType::GroundAngled2, 0};
 
 class MapLayer final
 {
+    std::unordered_map<int, TileData> mapTileData;
 
+    std::vector<SurfaceData> collisionGeometry;
 
-    std::vector<TileData> collisionGeometry;
 public:
     explicit MapLayer();
 
