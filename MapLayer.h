@@ -37,9 +37,45 @@ Encapsulates a texture and vertex array and uses them to draw a map layer
 #include <tmxlite/Map.hpp>
 #include <vector>
 #include "Actor.h"
+
+struct tripoint
+{
+    float x;
+    float y;
+    float z;
+};
+struct TileData
+{
+    tripoint origin;
+    tripoint endpoint;
+};
+
+const TileData ground {{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}};
+const TileData wall {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}};
+
+const TileData box {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
+
+const TileData groundAngled1{{0.0, 0.0, 1.0}, {0.5, 0.0, 0.0}};
+
+const TileData groundAngled2{{0.5, 0.0, 1.0}, {1.0, 0.0, 0.0}};
+
+enum TileType
+{
+    None,
+    Ground,
+    Wall,
+    GroundAngled1,
+    GroundAngled2,
+    GroundAngled3,
+    GroundAngled4,
+    
+}
+
 class MapLayer final
 {
-    std::vector<struct Rect3> collisionGeometry;
+
+
+    std::vector<TileData> collisionGeometry;
 public:
     explicit MapLayer();
 

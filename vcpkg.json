@@ -3,6 +3,7 @@
     "sdl2",
     "sdl2-image",
     "pkgconf",
-    "tmxlite"
+    "tmxlite",
+    "cjson"
   ]
 }
