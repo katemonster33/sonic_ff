@@ -174,17 +174,43 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLay
 {
     TileType lastTileType = TileType::None;
     SurfaceData *output = new SurfaceData;
-    TileType curTileType = getTileType(mapX, mapY, mapSizeX);
-    switch(curTileType)
-    {
-        case TileType::Ground:
-        case TileType::GroundAngled1:
-        case TileType::GroundAngled2:
-        case TileType::GroundAngled3:
-        case TileType::GroundAngled4:
-        break;
-    }
+    TileType curTileType = getTileType(mapX, mapY, mapSizeX, layer);
+    TileType expectedTileType = TileType::None;
 
+    int lastX = mapX;
+    int endX = mapX + 1;
+    int endY = mapY + 1;
+    int curX = mapX;
+    int curY = mapY + 1;
+    int x1 = mapX;
+    int x2 = mapX + 1;
+    int y1 + map
+    while( curX <= mapSizeX )
+    {
+        switch(curTileType)
+        {
+            case TileType::Ground:
+                curY++;
+                break;
+            case TileType::GroundAngled1:
+                curY++;
+                expectedTileType = TileType::GroundAngled2;
+                break;
+            case TileType::GroundAngled2:
+                curY++;
+                curX++;
+                expectedTileType = TileType::GroundAngled3;
+                break;
+            case TileType::GroundAngled3:
+                curY++;
+                expectedTileType = TileType::GroundAngled4;
+                break;
+            case TileType::GroundAngled4:
+                curY++;
+                expectedTileType = TileType::GroundAngled1;
+                break;
+        }
+    }
 }
 
 /// @brief Trace a 3D surface from the 2D map by looking at the geometry of the tiles as defined in JSON
