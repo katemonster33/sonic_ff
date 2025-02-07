@@ -155,10 +155,35 @@ bool GameWindow::readJsonTileData()
         childJson = childJson->next;
     }
     cJSON_Delete(json);
+    return true;
 }
 
-void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+TileType GameWindow::getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer)
 {
+    int tileId = layer.getTiles()[mapSizeX * mapY + mapX].ID;
+    TileType tileType = TileType::None;
+    std::unordered_map<int, TileData>::iterator it = mapTileData.find(tileId);
+    if(it != mapTileData.end())
+    {
+        tileType = it->second.tileType;
+    }
+    return tileType;
+}
+
+void GameWindow::traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+{
+    TileType lastTileType = TileType::None;
+    SurfaceData *output = new SurfaceData;
+    TileType curTileType = getTileType(mapX, mapY, mapSizeX);
+    switch(curTileType)
+    {
+        case TileType::Ground:
+        case TileType::GroundAngled1:
+        case TileType::GroundAngled2:
+        case TileType::GroundAngled3:
+        case TileType::GroundAngled4:
+        break;
+    }
 
 }
 

@@ -35,73 +35,8 @@ source distribution.
 #include <cjson/cJSON.h>
 #include <stdio.h>
 
-int getFileLength(FILE *file)
-{
-    //Find the length
-    fseek(file, 0, SEEK_END);
-    int length = ftell(file);
-    rewind(file);
-    return length;
-}
-
 MapLayer::MapLayer()
 {
-    FILE *jsonFile = fopen("assets/robotropolis-sheet.json", "r");
-    assert(jsonFile != nullptr);
-
-    int len = getFileLength(jsonFile);
-    char *fileData = new char[len];
-
-    for(int i = 0; i < len; i++)
-    {
-        fileData[i] = fgetc(jsonFile);
-    }
-    fclose(jsonFile);
-    cJSON *json = cJSON_Parse(fileData);
-    delete fileData;
-    assert(json != nullptr && json->child != nullptr);
-
-    cJSON *childJson = json->child;
-    while (childJson != nullptr) {
-        cJSON *tileData = childJson->child;
-        TileData data;
-        data.id = atoi(childJson->string);
-        while(tileData != nullptr) {
-            char *str = tileData->valuestring;
-            if(strcmp(tileData->string, "collisionPreset") == 0) {
-                data.tileType = TileType::None;
-                if(strcmp(str, "wall") == 0) {
-                    data.tileType = TileType::Wall;
-                } else if(strcmp(str, "sideWall") == 0) {
-                    data.tileType = TileType::SideWall;
-                } else if(strcmp(str, "sideWallAngled1") == 0) {
-                    data.tileType = TileType::SideWallAngled1;
-                } else if(strcmp(str, "sideWallAngled2") == 0) {
-                    data.tileType = TileType::SideWallAngled2;
-                } else if(strcmp(str, "sideWallAngled3") == 0) {
-                    data.tileType = TileType::SideWallAngled3;
-                } else if(strcmp(str, "sideWallAngled4") == 0) {
-                    data.tileType = TileType::SideWallAngled4;
-                } else if(strcmp(str, "box") == 0) {
-                    data.tileType = TileType::Box;
-                } else if(strcmp(str, "ground") == 0) {
-                    data.tileType = TileType::Ground;
-                } else if(strcmp(str, "groundAngled1") == 0) {
-                    data.tileType = TileType::GroundAngled1;
-                } else if(strcmp(str, "groundAngled2") == 0) {
-                    data.tileType = TileType::GroundAngled2;
-                } else if(strcmp(str, "groundAngled3") == 0) {
-                    data.tileType = TileType::GroundAngled3;
-                } else if(strcmp(str, "groundAngled4") == 0) {
-                    data.tileType = TileType::GroundAngled4;
-                }
-            }
-            tileData = tileData->next;
-        }
-        mapTileData[data.id] = data;
-        childJson = childJson->next;
-    }
-    cJSON_Delete(json);
 }
 
 bool MapLayer::create(const tmx::Map& map, std::uint32_t layerIndex, const std::vector<std::unique_ptr<Texture>>& textures)

@@ -56,8 +56,8 @@ struct cuboid
 
 struct TileData
 {
-    cuboid origin;
-    cuboid endpoint;
+    tripoint origin;
+    tripoint endpoint;
     TileType tileType;
     int id;
 };
@@ -67,6 +67,11 @@ struct SurfaceData
     cuboid dimensions;
     rect mapRect;
 };
+
+namespace tmx
+{
+    class TileLayer;
+}
 
 const TileData ground {{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, TileType::Ground, 0};
 const TileData wall {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, TileType::Wall, 0};
@@ -80,8 +85,9 @@ const TileData groundAngled2{{0.5, 0.0, 1.0}, {1.0, 0.0, 0.0}, TileType::GroundA
 class GameWindow
 {
     std::vector<SurfaceData> collisionGeometry;
-    void traceGroundTiles(int mapX, int mapY, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    SurfaceData *createSurfaceFromMap(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ);
+    void traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    SurfaceData *createSurfaceFromMap(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer, int currentZ);
+    TileType getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer);
     std::unordered_map<int, TileData> mapTileData;
     struct SDL_Window *window;
     struct SDL_Renderer *renderer;
