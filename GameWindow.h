@@ -86,6 +86,8 @@ class GameWindow
 {
     std::vector<SurfaceData> collisionGeometry;
     void traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    void traceSideWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    void traceWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     SurfaceData *createSurfaceFromMap(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer, int currentZ);
     TileType getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer);
     std::unordered_map<int, TileData> mapTileData;

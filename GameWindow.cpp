@@ -7,6 +7,7 @@
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
 #include <cjson/cJSON.h>
+#include <iostream>
 
 SpriteConfig sonicSpriteCfg{
   "Sonic",
@@ -176,40 +177,128 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLay
     SurfaceData *output = new SurfaceData;
     TileType curTileType = getTileType(mapX, mapY, mapSizeX, layer);
     TileType expectedTileType = TileType::None;
-
-    int lastX = mapX;
-    int endX = mapX + 1;
-    int endY = mapY + 1;
-    int curX = mapX;
-    int curY = mapY + 1;
-    int x1 = mapX;
-    int x2 = mapX + 1;
-    int y1 + map
-    while( curX <= mapSizeX )
+    if(curTileType != TileType::GroundAngled1 && curTileType != TileType::GroundAngled2)
     {
-        switch(curTileType)
-        {
-            case TileType::Ground:
-                curY++;
-                break;
-            case TileType::GroundAngled1:
-                curY++;
-                expectedTileType = TileType::GroundAngled2;
-                break;
-            case TileType::GroundAngled2:
-                curY++;
-                curX++;
-                expectedTileType = TileType::GroundAngled3;
-                break;
-            case TileType::GroundAngled3:
-                curY++;
-                expectedTileType = TileType::GroundAngled4;
-                break;
-            case TileType::GroundAngled4:
-                curY++;
-                expectedTileType = TileType::GroundAngled1;
-                break;
+        std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        return;
+    }
+    surface.dimensions.z1 = currentZ;
+    surface.dimensions.z2 = currentZ + 1;
+    surface.mapRect.x1 = mapX;
+    surface.mapRect.x2 = mapX + 1;
+    while(getTileType(surface.mapRect.x2, mapY, mapSizeX, layer) == TileType::Ground)
+    {
+        surface.mapRect.x2++;
+    }
+    surface.mapRect.y1 = mapY;
+    surface.mapRect.y2 = mapY;
+    int tmpX = surface.mapRect.x1;
+    int xlen = surface.mapRect.x2 - surface.mapRect.x1;
+    while(surface.mapRect.y2 < layer.getSize().y)
+    {
+        TileType leftTile = getTileType(tmpX, surface.mapRect.y2 + 1, mapSizeX, layer);
+        TileType rightTile = getTileType(tmpX + xlen, surface.mapRect.y2 + 1, mapSizeX, layer);
+        if(!((leftTile == TileType::GroundAngled1 && rightTile == TileType::GroundAngled3) || 
+            (leftTile == TileType::GroundAngled2 && rightTile == TileType::GroundAngled4))) {
+            break;
         }
+        if(leftTile == TileType::GroundAngled2) {
+            // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
+            tmpX++;
+        }
+        surface.mapRect.y2++;
+    }
+    if(surface.mapRect.y2 == mapY)
+    {
+        std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
+    }
+}
+
+void GameWindow::traceWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+{
+    TileType lastTileType = TileType::None;
+    SurfaceData *output = new SurfaceData;
+    TileType curTileType = getTileType(mapX, mapY, mapSizeX, layer);
+    TileType expectedTileType = TileType::None;
+    if(curTileType != TileType::Wall && curTileType != TileType::SideWallAngled1)
+    {
+        std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        return;
+    }
+    bool sideWallMode = curTileType == TileType::SideWallAngled1;
+    surface.dimensions.z1 = currentZ;
+    surface.dimensions.z2 = currentZ + 1;
+    surface.mapRect.x1 = mapX;
+    surface.mapRect.x2 = mapX + 1;
+    while(getTileType(surface.mapRect.x2, mapY, mapSizeX, layer) == TileType::Ground)
+    {
+        surface.mapRect.x2++;
+    }
+    surface.mapRect.y1 = mapY;
+    surface.mapRect.y2 = mapY;
+    int tmpX = surface.mapRect.x1;
+    int xlen = surface.mapRect.x2 - surface.mapRect.x1;
+    while(surface.mapRect.y2 < layer.getSize().y)
+    {
+        TileType leftTile = getTileType(tmpX, surface.mapRect.y2 + 1, mapSizeX, layer);
+        TileType rightTile = getTileType(tmpX + xlen, surface.mapRect.y2 + 1, mapSizeX, layer);
+        if(!((leftTile == TileType::GroundAngled1 && rightTile == TileType::GroundAngled3) || 
+            (leftTile == TileType::GroundAngled2 && rightTile == TileType::GroundAngled4))) {
+            break;
+        }
+        if(leftTile == TileType::GroundAngled2) {
+            // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
+            tmpX++;
+        }
+        surface.mapRect.y2++;
+    }
+    if(surface.mapRect.y2 == mapY)
+    {
+        std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
+    }
+}
+
+void GameWindow::traceSideWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+{
+    TileType lastTileType = TileType::None;
+    SurfaceData *output = new SurfaceData;
+    TileType curTileType = getTileType(mapX, mapY, mapSizeX, layer);
+    TileType expectedTileType = TileType::None;
+    if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2)
+    {
+        std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        return;
+    }
+    bool sideWallMode = curTileType == TileType::SideWallAngled1;
+    surface.dimensions.z1 = currentZ;
+    surface.dimensions.z2 = currentZ + 1;
+    surface.mapRect.x1 = mapX;
+    surface.mapRect.x2 = mapX + 1;
+    while(getTileType(surface.mapRect.x2, mapY, mapSizeX, layer) == TileType::Ground)
+    {
+        surface.mapRect.x2++;
+    }
+    surface.mapRect.y1 = mapY;
+    surface.mapRect.y2 = mapY;
+    int tmpX = surface.mapRect.x1;
+    int xlen = surface.mapRect.x2 - surface.mapRect.x1;
+    while(surface.mapRect.y2 < layer.getSize().y)
+    {
+        TileType leftTile = getTileType(tmpX, surface.mapRect.y2 + 1, mapSizeX, layer);
+        TileType rightTile = getTileType(tmpX + xlen, surface.mapRect.y2 + 1, mapSizeX, layer);
+        if(!((leftTile == TileType::GroundAngled1 && rightTile == TileType::GroundAngled3) || 
+            (leftTile == TileType::GroundAngled2 && rightTile == TileType::GroundAngled4))) {
+            break;
+        }
+        if(leftTile == TileType::GroundAngled2) {
+            // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
+            tmpX++;
+        }
+        surface.mapRect.y2++;
+    }
+    if(surface.mapRect.y2 == mapY)
+    {
+        std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
     }
 }
 
