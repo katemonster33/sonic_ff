@@ -41,6 +41,9 @@ struct rect
     int y1;
     int x2;
     int y2;
+
+    bool intersects(const rect &other) const;
+    bool intersects(int x, int y) const;
 };
 
 /// @brief 3D cuboid surface, for handling absolute dimensions of a collidable surface
@@ -88,6 +91,7 @@ class GameWindow
     void traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     void traceSideWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     void traceWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    tmx::TileLayer *getLayerByName(const char *name);
     SurfaceData *createSurfaceFromMap(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer, int currentZ);
     TileType getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer);
     std::unordered_map<int, TileData> mapTileData;
@@ -104,6 +108,7 @@ class GameWindow
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
     bool readJsonTileData();
+    bool any_surface_intersects(const std::vector<SurfaceData> &surfaces, int mapX, int mapY);
 public:
     static GameWindow *Create();
     ~GameWindow();
