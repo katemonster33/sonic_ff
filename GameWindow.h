@@ -3,10 +3,12 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <tmxlite/Types.hpp>
 
 namespace tmx
 {
     class Map;
+    class TileLayer;
 }
 
 enum class TileType
@@ -71,11 +73,6 @@ struct SurfaceData
     rect mapRect;
 };
 
-namespace tmx
-{
-    class TileLayer;
-}
-
 const TileData ground {{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, TileType::Ground, 0};
 const TileData wall {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, TileType::Wall, 0};
 
@@ -88,11 +85,11 @@ const TileData groundAngled2{{0.5, 0.0, 1.0}, {1.0, 0.0, 0.0}, TileType::GroundA
 class GameWindow
 {
     std::vector<SurfaceData> collisionGeometry;
-    void traceGroundTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    void traceSideWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    void traceWallTiles(int mapX, int mapY, int mapSizeX, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    void traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    void traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    void traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     tmx::TileLayer *getLayerByName(const char *name);
-    SurfaceData *createSurfaceFromMap(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer, int currentZ);
+    SurfaceData *createSurfaceFromMap(int mapX, int mapY, tmx::Vector2u &mapSize, const tmx::TileLayer &layer, int currentZ);
     TileType getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer);
     std::unordered_map<int, TileData> mapTileData;
     struct SDL_Window *window;

@@ -1,5 +1,4 @@
-{
-    "0" : { "collisionPreset" : "wall" },
+{=
     "1" : { "collisionPreset" : "wall" },
     "2" : { "collisionPreset" : "wall" },
     "3" : { "collisionPreset" : "wall" },
