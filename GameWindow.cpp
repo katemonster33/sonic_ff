@@ -9,6 +9,37 @@
 #include <cjson/cJSON.h>
 #include <iostream>
 
+
+bool isSideWallTile(TileType tileType)
+{
+    switch (tileType)
+    {
+    case TileType::SideWall:
+    case TileType::SideWallAngled1:
+    case TileType::SideWallAngled2:
+    case TileType::SideWallAngled3:
+    case TileType::SideWallAngled4:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool isGroundTile(TileType tileType)
+{
+    switch (tileType)
+    {
+    case TileType::Ground:
+    case TileType::GroundAngled1:
+    case TileType::GroundAngled2:
+    case TileType::GroundAngled3:
+    case TileType::GroundAngled4:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool rect::intersects(const rect &other) const
 {
     return ((x1 >= other.x1 && x1 <= other.x2) || (x2 >= other.x1 && x2 <= other.x2)) && 
@@ -215,7 +246,7 @@ bool GameWindow::readJsonTileData()
     }
     fclose(jsonFile);
     cJSON *json = cJSON_Parse(fileData);
-    delete fileData;
+    delete[] fileData;
     assert(json != nullptr && json->child != nullptr);
 
     cJSON *childJson = json->child;
@@ -298,7 +329,6 @@ tmx::TileLayer *GameWindow::getLayerByName(const char *name)
 void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
-    SurfaceData *output = new SurfaceData;
     TileType curTileType = getTileType(mapX, mapY, mapSize.x, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::GroundAngled1 && curTileType != TileType::GroundAngled2) {
@@ -309,8 +339,11 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     surface.dimensions.z2 = currentZ + 1;
     surface.mapRect.x1 = mapX;
     surface.mapRect.x2 = mapX + 1;
-    while(getTileType(surface.mapRect.x2, mapY, mapSize.x, layer) == TileType::Ground) {
+    while(surface.mapRect.x2 < layer.getSize().x && isGroundTile(getTileType(surface.mapRect.x2, mapY, mapSize.x, layer))) {
         surface.mapRect.x2++;
+    }
+    if (surface.mapRect.x2 >= layer.getSize().x) {
+        surface.mapRect.x2 = layer.getSize().x - 1;
     }
     surface.mapRect.y1 = mapY;
     surface.mapRect.y2 = mapY;
@@ -338,7 +371,6 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
 void GameWindow::traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
-    SurfaceData *output = new SurfaceData;
     TileType curTileType = getTileType(mapX, mapY, mapSize.x, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::Wall && curTileType != TileType::SideWallAngled1) {
@@ -374,42 +406,42 @@ void GameWindow::traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx:
 void GameWindow::traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
-    SurfaceData *output = new SurfaceData;
     TileType curTileType = getTileType(mapX, mapY, mapSize.x, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2)
     {
-        std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        std::cout << "Bad map! Side-wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
         return;
     }
     surface.mapRect.y1 = surface.mapRect.y2 = mapY;
-    while((surface.mapRect.y2 + 1) < mapSize.y && getTileType(mapX, surface.mapRect.y2 + 1, mapSize.x, layer) == TileType::Wall) {
+    while(surface.mapRect.y2 + 1 < mapSize.y && isSideWallTile(getTileType(mapX, surface.mapRect.y2 + 1, mapSize.x, layer))) {
         surface.mapRect.y2++;
     }
+    surface.dimensions.y1 = mapY;
+    // We set y2 here, because as we "descend" down the angle of the wall in 2D space, the 3D y-value does not change
+    surface.dimensions.y2 = surface.mapRect.y2;
     surface.dimensions.z1 = surface.dimensions.z2 = currentZ;
     surface.mapRect.x1 = mapX;
-    surface.mapRect.x2 = mapX + 1;
-    surface.mapRect.y1 = mapY;
-    surface.mapRect.y2 = mapY;
-    int tmpX = surface.mapRect.x1;
-    int xlen = surface.mapRect.x2 - surface.mapRect.x1;
-    while(surface.mapRect.y2 < layer.getSize().y)
+    surface.mapRect.x2 = mapX;
+    surface.dimensions.x1 = surface.mapRect.x1;
+    int ylen = surface.mapRect.y2 - surface.mapRect.y1;
+    while(surface.mapRect.x2 < layer.getSize().x && 
+        surface.mapRect.y2 < layer.getSize().y)
     {
-        TileType leftTile = getTileType(tmpX, surface.mapRect.y2 + 1, mapSize.x, layer);
-        TileType rightTile = getTileType(tmpX + xlen, surface.mapRect.y2 + 1, mapSize.x, layer);
-        if(!((leftTile == TileType::SideWallAngled1 && rightTile == TileType::SideWallAngled3) || 
-            (leftTile == TileType::SideWallAngled2 && rightTile == TileType::SideWallAngled4))) {
+        TileType leftTile = getTileType(surface.mapRect.x2, surface.mapRect.y2 - ylen, mapSize.x, layer);
+        TileType rightTile = getTileType(surface.mapRect.x2, surface.mapRect.y2, mapSize.x, layer);
+        if(!((leftTile == TileType::SideWallAngled1 && rightTile == TileType::SideWallAngled4) || 
+            (leftTile == TileType::SideWallAngled2 && rightTile == TileType::SideWallAngled3))) {
             break;
         }
-        if(leftTile == TileType::SideWallAngled2) {
-            // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
-            tmpX++;
-        }
-        surface.mapRect.y2++;
+        surface.mapRect.y2 += 2;
+        surface.mapRect.x2++;
+        surface.dimensions.z2++;
     }
+    surface.dimensions.x2 = surface.mapRect.x2;
     if(surface.mapRect.y2 == mapY)
     {
-        std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
+        std::cout << "Bad map! Did not parse a single column of side-wall tiles!" << std::endl;
     }
 }
 
