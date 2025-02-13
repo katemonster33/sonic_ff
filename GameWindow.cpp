@@ -182,19 +182,17 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         for(auto x = 0u; x < mapSize.x; x++) {
             for(auto y = 0u; y < mapSize.y; y++) {
                 TileType fgTileType = getTileType(x, y, mapSize.x, *fgLayer);
-                switch(fgTileType) {
-                    case TileType::Ground:
-                    case TileType::GroundAngled1:
-                    case TileType::GroundAngled2:
-                    case TileType::GroundAngled3:
-                    case TileType::GroundAngled4:
+                if(isGroundTile(fgTileType)) {
                     int currentZ = -1;
                     for(const SurfaceData& bgSurface : bgWallSurfaces) {
-                        if(bgSurface.mapRect.intersects(x + 1, y)) {
+                        if(bgSurface.mapRect.intersects(x, y - 1)) {
+                            if(bgSurface.dimensions.z2 >= bgSurface.dimensions.z1 + 1) {
+                            } else {
+                                currentZ = bgSurface.dimensions.z2;
+                            }
+                        } else if(bgSurface.mapRect.intersects(x + 1, y)) {
                             //currentZ = bgSurface.dimensions.z2 - bgSurface.dimensions.z1 + 
-                        } else if(bgSurface.mapRect.intersects(x, y - 1)) {
-                            currentZ = bgSurface.dimensions.z2;
-                        }
+                        } 
                     }
                     if(currentZ == -1) {
                         for(const auto &fgSurface : fgWallSurfaces) {
@@ -339,30 +337,29 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     surface.dimensions.z2 = currentZ + 1;
     surface.mapRect.x1 = mapX;
     surface.mapRect.x2 = mapX + 1;
-    while(surface.mapRect.x2 < layer.getSize().x && isGroundTile(getTileType(surface.mapRect.x2, mapY, mapSize.x, layer))) {
+    while(surface.mapRect.x2 < (layer.getSize().x - 1) && isGroundTile(getTileType(surface.mapRect.x2 + 1, mapY, mapSize.x, layer))) {
         surface.mapRect.x2++;
     }
-    if (surface.mapRect.x2 >= layer.getSize().x) {
-        surface.mapRect.x2 = layer.getSize().x - 1;
-    }
-    surface.mapRect.y1 = mapY;
-    surface.mapRect.y2 = mapY;
-    int tmpX = surface.mapRect.x1;
+    surface.dimensions.x1 = surface.mapRect.x1;
+    surface.dimensions.x2 = surface.mapRect.x2 + 1;
+    surface.dimensions.y1 = surface.dimensions.y2 = mapY;
+    surface.dimensions.y2++;
+    surface.mapRect.y1 = surface.mapRect.y2 = mapY;
     int xlen = surface.mapRect.x2 - surface.mapRect.x1;
     while(surface.mapRect.y2 < layer.getSize().y) {
-        TileType leftTile = getTileType(tmpX, surface.mapRect.y2 + 1, mapSize.x, layer);
-        TileType rightTile = getTileType(tmpX + xlen, surface.mapRect.y2 + 1, mapSize.x, layer);
+        TileType leftTile = getTileType(surface.mapRect.x2 - xlen, surface.mapRect.y2 + 1, mapSize.x, layer);
+        TileType rightTile = getTileType(surface.mapRect.x2, surface.mapRect.y2 + 1, mapSize.x, layer);
         if(!((leftTile == TileType::GroundAngled1 && rightTile == TileType::GroundAngled3) || 
             (leftTile == TileType::GroundAngled2 && rightTile == TileType::GroundAngled4))) {
             break;
         }
         if(leftTile == TileType::GroundAngled2) {
             // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
-            tmpX++;
+            surface.mapRect.x2++;
         }
         surface.mapRect.y2++;
+        surface.dimensions.z2++;
     }
-    surface.dimensions.z2 = surface.dimensions.z1 + (surface.mapRect.y2 - surface.mapRect.y1);
     if(surface.mapRect.y2 == mapY) {
         std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
     }
