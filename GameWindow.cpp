@@ -151,7 +151,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
-    auto fgWallLayer = getLayerByName("Walls");
+    auto fgWallLayer = getLayerByName("walls");
     if(fgWallLayer != nullptr) {
         int currentZ = 0;
         for(auto x = 0u; x < mapSize.x; x++) {
