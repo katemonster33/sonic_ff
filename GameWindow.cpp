@@ -97,6 +97,36 @@ bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces
     return false;
 }
 
+int GameWindow::getZLevelAtPoint(int mapX, int mapY, const std::vector<SurfaceData>& bgWallSurfaces, const std::vector<SurfaceData>& fgWallSurfaces, const std::vector<SurfaceData>& groundSurfaces)
+{
+    for(const SurfaceData& groundSurface : groundSurfaces) {
+        if(groundSurface.mapRect.intersects(x, y - 1)) {
+            return groundSurface.dimensions.z2;
+        }
+    }
+    for(const SurfaceData& bgSurface : bgWallSurfaces) {
+        if(bgSurface.mapRect.intersects(x, y - 1)) {
+            if(bgSurface.dimensions.z2 > (bgSurface.dimensions.z1 + 1)) {
+                return (x - bgSurface.mapRect.x1) / 2;
+            } else {
+                return  bgSurface.dimensions.z2;
+            }
+        } else if(bgSurface.mapRect.intersects(x + 1, y)) {
+            //currentZ = bgSurface.dimensions.z2 - bgSurface.dimensions.z1 + 
+        } 
+    }
+    for(const auto &fgSurface : fgWallSurfaces) {
+        if(fgSurface.mapRect.intersects(x, y - 1)) {
+            return fgSurface.dimensions.z2;
+            break;
+        } else if(fgSurface.mapRect.intersects(x - 1, y)) {
+            return fgSurface.dimensions.z1 + (fgSurface.mapRect.y2 - fgSurface.mapRect.y1);
+            break;
+        }
+    }
+    return -1;
+}
+
 GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey) : 
     size_x(sizex),
     size_y(sizey),
@@ -153,25 +183,33 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     }
     auto fgWallLayer = getLayerByName("walls");
     if(fgWallLayer != nullptr) {
-        int currentZ = 0;
         for(auto x = 0u; x < mapSize.x; x++) {
             for(auto y = 0u; y < mapSize.y; y++) {
-                TileType bgTileType = getTileType(x, y, mapSize.x, *bgLayer);
+                TileType bgTileType = getTileType(x, y, mapSize.x, *fgWallLayer);
                 if(bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) {
                     SurfaceData wallSurface;
                     if(bgTileType == TileType::Wall) {
-                        traceWallTiles(x, y, mapSize, *bgLayer, currentZ, wallSurface);
-                    } else {
-                        for(auto fgWallSurface : fgWallSurfaces) {
-                            if(fgWallSurface.mapRect.intersects(x, y - 1)) {
-                                currentZ = fgWallSurface.dimensions.z2;
+                        traceWallTiles(x, y, mapSize, *fgWallLayer, 0, wallSurface);
+                        for(const auto& fgWall: fgWallSurfaces) {
+                            if(fgWall.mapRect.intersects(x - 1, y)) {
+                                wallSurface.dimensions.z1 += fgWall.dimensions.z2;
+                                wallSurface.dimensions.z2 += fgWall.dimensions.z2;
+                                break;
                             }
                         }
-                        traceSideWallTiles(x, y, mapSize, *bgLayer, currentZ, wallSurface);
+                    } else {
+                        traceSideWallTiles(x, y, mapSize, *fgWallLayer, 0, wallSurface);
+
+                        for(const auto& bgWall: bgWallSurfaces) {
+                            if(bgWall.mapRect.intersects(x - 1, y)) {
+                                wallSurface.dimensions.z1 += bgWall.dimensions.z2;
+                                wallSurface.dimensions.z2 += bgWall.dimensions.z2;
+                                break;
+                            }
+                        }
                     }
                     fgWallSurfaces.push_back(wallSurface);
                     x = wallSurface.mapRect.x2;
-                    currentZ = wallSurface.dimensions.z2;
                     break;
                 }
             }
@@ -182,29 +220,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         for(auto x = 0u; x < mapSize.x; x++) {
             for(auto y = 0u; y < mapSize.y; y++) {
                 TileType fgTileType = getTileType(x, y, mapSize.x, *fgLayer);
-                if(isGroundTile(fgTileType)) {
-                    int currentZ = -1;
-                    for(const SurfaceData& bgSurface : bgWallSurfaces) {
-                        if(bgSurface.mapRect.intersects(x, y - 1)) {
-                            if(bgSurface.dimensions.z2 >= bgSurface.dimensions.z1 + 1) {
-                            } else {
-                                currentZ = bgSurface.dimensions.z2;
-                            }
-                        } else if(bgSurface.mapRect.intersects(x + 1, y)) {
-                            //currentZ = bgSurface.dimensions.z2 - bgSurface.dimensions.z1 + 
-                        } 
-                    }
-                    if(currentZ == -1) {
-                        for(const auto &fgSurface : fgWallSurfaces) {
-                            if(fgSurface.mapRect.intersects(x, y - 1)) {
-                                currentZ = fgSurface.dimensions.z2;
-                                break;
-                            } else if(fgSurface.mapRect.intersects(x - 1, y)) {
-                                currentZ = fgSurface.dimensions.z1 + (fgSurface.mapRect.y2 - fgSurface.mapRect.y1);
-                                break;
-                            }
-                        }
-                    }
+                if(isGroundTile(fgTileType) && !any_surface_intersects(groundSurfaces, x, y)) {
+                    int currentZ = getZLevelAtPoint(x, y, bgWallSurfaces, fgWallSurfaces, groundSurfaces);
                     SurfaceData fgSurface;
                     traceGroundTiles(x, y, mapSize, *fgLayer, currentZ, fgSurface);
                     groundSurfaces.push_back(fgSurface);
@@ -212,6 +229,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
+    
 }
 
 GameWindow::~GameWindow()
@@ -433,7 +451,7 @@ void GameWindow::traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, 
         }
         surface.mapRect.y2 += 2;
         surface.mapRect.x2++;
-        surface.dimensions.z2++;
+        surface.dimensions.z2 += 2;
     }
     surface.dimensions.x2 = surface.mapRect.x2;
     if(surface.mapRect.y2 == mapY)
