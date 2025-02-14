@@ -24,7 +24,7 @@ pkg_check_modules(tmxlite REQUIRED tmxlite)
 
 
 # Add source to this project's executable.
-add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "Terrain.cpp" "MapLayer.cpp")
+add_executable (sonic_ff "main.cpp" "SpriteSheet.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "Terrain.cpp" "MapLayer.cpp" "Geometry.h" "Geometry.cpp")
 target_include_directories(sonic_ff PUBLIC ${tmxlite_INCLUDEDIR})
 target_include_directories(sonic_ff PUBLIC cjson)
 target_link_libraries(sonic_ff PRIVATE ${tmxlite_LINK_LIBRARIES} cjson SDL2::SDL2 SDL2::SDL2main $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static> zstd)

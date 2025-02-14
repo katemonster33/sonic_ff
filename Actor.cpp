@@ -1,4 +1,5 @@
 #include "Actor.h"
+#include "Geometry.h"
 
 Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int startx, int starty, int startz) :
     spriteConfig(spriteConfig),
@@ -122,8 +123,21 @@ void Actor::handle_input(const SDL_Event& event)
     }
 }
 
+
 CollisionType Actor::check_collision(GameWindow* parentWindow)
 {
+    int cType = CollisionType::NoCollision;
+    cylinder c;
+    c.x = x + collisionGeometry.x;
+    c.y1 = y + collisionGeometry.y;
+    c.y2 = y + collisionGeometry.y + collisionGeometry.h;
+    c.r = collisionGeometry.w / 2;
+    c.z = z;
+    for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
+        if ((cType = get_collision(wallGeometry.dimensions, c)) != CollisionType::NoCollision) {
+            return (CollisionType)cType;
+        }
+    }
     return CollisionType::NoCollision;
 }
 

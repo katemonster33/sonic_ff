@@ -9,43 +9,12 @@
 const float MAX_PLAYER_X_VELOCITY = 5.0f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
 
-enum CollisionType
-{
-    NoCollision,
-    Left = 1,
-    Right = 2,
-    Up = 4,
-    Down = 8,
-    Front = 16,
-    Back = 32
-};
 
-struct Rect2
-{
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-struct Rect3 : public Rect2
-{
-    int z;
-    int d;
-};
-
-struct Hitbox
-{
-    int x;
-    int y;
-    int z;
-
-};
 
 class Actor
 {
     Rect2 spriteRect;
-    Rect3 collisionRect;
+    Hitbox collisionGeometry;
     int x;
     int y;
     int height;

@@ -9,7 +9,6 @@
 #include <cjson/cJSON.h>
 #include <iostream>
 
-
 bool isSideWallTile(TileType tileType)
 {
     switch (tileType)
@@ -89,7 +88,7 @@ SpriteConfig sonicSpriteCfg{
 
 bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces, int mapX, int mapY)
 {
-    for(auto surface : surfaces){
+    for(const auto& surface : surfaces){
         if(surface.mapRect.intersects(mapX, mapY)) {
             return true;
         }
@@ -97,31 +96,24 @@ bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces
     return false;
 }
 
-int GameWindow::getZLevelAtPoint(int mapX, int mapY, const std::vector<SurfaceData>& bgWallSurfaces, const std::vector<SurfaceData>& fgWallSurfaces, const std::vector<SurfaceData>& groundSurfaces)
+int GameWindow::getZLevelAtPoint(int mapX, int mapY)
 {
     for(const SurfaceData& groundSurface : groundSurfaces) {
-        if(groundSurface.mapRect.intersects(x, y - 1)) {
-            return groundSurface.dimensions.z2;
+        if(groundSurface.mapRect.intersects(mapX, mapY - 1)) {
+            return groundSurface.dimensions.z1 + (mapY - groundSurface.mapRect.y1);
         }
     }
-    for(const SurfaceData& bgSurface : bgWallSurfaces) {
-        if(bgSurface.mapRect.intersects(x, y - 1)) {
-            if(bgSurface.dimensions.z2 > (bgSurface.dimensions.z1 + 1)) {
-                return (x - bgSurface.mapRect.x1) / 2;
+    for(const SurfaceData& wallSurface : wallSurfaces) {
+        if(wallSurface.mapRect.intersects(mapX, mapY - 1)) {
+            if(wallSurface.dimensions.z2 > (wallSurface.dimensions.z1 + 1)) {
+                return (mapX - wallSurface.mapRect.x1) / 2;
             } else {
-                return  bgSurface.dimensions.z2;
+                return  wallSurface.dimensions.z2;
             }
-        } else if(bgSurface.mapRect.intersects(x + 1, y)) {
-            //currentZ = bgSurface.dimensions.z2 - bgSurface.dimensions.z1 + 
-        } 
-    }
-    for(const auto &fgSurface : fgWallSurfaces) {
-        if(fgSurface.mapRect.intersects(x, y - 1)) {
-            return fgSurface.dimensions.z2;
-            break;
-        } else if(fgSurface.mapRect.intersects(x - 1, y)) {
-            return fgSurface.dimensions.z1 + (fgSurface.mapRect.y2 - fgSurface.mapRect.y1);
-            break;
+        } else if(wallSurface.mapRect.intersects(mapX + 1, mapY)) {
+            //currentZ = wallSurface.dimensions.z2 - wallSurface.dimensions.z1 + 
+        } else if (wallSurface.mapRect.intersects(mapX - 1, mapY)) {
+            return wallSurface.dimensions.z1 + (wallSurface.mapRect.y2 - wallSurface.mapRect.y1);
         }
     }
     return -1;
@@ -221,7 +213,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             for(auto y = 0u; y < mapSize.y; y++) {
                 TileType fgTileType = getTileType(x, y, mapSize.x, *fgLayer);
                 if(isGroundTile(fgTileType) && !any_surface_intersects(groundSurfaces, x, y)) {
-                    int currentZ = getZLevelAtPoint(x, y, bgWallSurfaces, fgWallSurfaces, groundSurfaces);
+                    int currentZ = getZLevelAtPoint(x, y);
                     SurfaceData fgSurface;
                     traceGroundTiles(x, y, mapSize, *fgLayer, currentZ, fgSurface);
                     groundSurfaces.push_back(fgSurface);
@@ -229,7 +221,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
-    
+    z0_x = wallSurfaces[0].mapRect.x1;
+    z0_y = wallSurfaces[0].mapRect.y1;
 }
 
 GameWindow::~GameWindow()
@@ -268,41 +261,41 @@ bool GameWindow::readJsonTileData()
     cJSON *childJson = json->child;
     while (childJson != nullptr) {
         cJSON *tileData = childJson->child;
-        TileData data;
-        data.id = atoi(childJson->string);
+        TileType tileType = TileType::None;
+        int id = atoi(childJson->string);
         while(tileData != nullptr) {
             char *str = tileData->valuestring;
             if(strcmp(tileData->string, "collisionPreset") == 0) {
-                data.tileType = TileType::None;
+                tileType = TileType::None;
                 if(strcmp(str, "wall") == 0) {
-                    data.tileType = TileType::Wall;
+                    tileType = TileType::Wall;
                 } else if(strcmp(str, "sideWall") == 0) {
-                    data.tileType = TileType::SideWall;
+                    tileType = TileType::SideWall;
                 } else if(strcmp(str, "sideWallAngled1") == 0) {
-                    data.tileType = TileType::SideWallAngled1;
+                    tileType = TileType::SideWallAngled1;
                 } else if(strcmp(str, "sideWallAngled2") == 0) {
-                    data.tileType = TileType::SideWallAngled2;
+                    tileType = TileType::SideWallAngled2;
                 } else if(strcmp(str, "sideWallAngled3") == 0) {
-                    data.tileType = TileType::SideWallAngled3;
+                    tileType = TileType::SideWallAngled3;
                 } else if(strcmp(str, "sideWallAngled4") == 0) {
-                    data.tileType = TileType::SideWallAngled4;
+                    tileType = TileType::SideWallAngled4;
                 } else if(strcmp(str, "box") == 0) {
-                    data.tileType = TileType::Box;
+                    tileType = TileType::Box;
                 } else if(strcmp(str, "ground") == 0) {
-                    data.tileType = TileType::Ground;
+                    tileType = TileType::Ground;
                 } else if(strcmp(str, "groundAngled1") == 0) {
-                    data.tileType = TileType::GroundAngled1;
+                    tileType = TileType::GroundAngled1;
                 } else if(strcmp(str, "groundAngled2") == 0) {
-                    data.tileType = TileType::GroundAngled2;
+                    tileType = TileType::GroundAngled2;
                 } else if(strcmp(str, "groundAngled3") == 0) {
-                    data.tileType = TileType::GroundAngled3;
+                    tileType = TileType::GroundAngled3;
                 } else if(strcmp(str, "groundAngled4") == 0) {
-                    data.tileType = TileType::GroundAngled4;
+                    tileType = TileType::GroundAngled4;
                 }
             }
             tileData = tileData->next;
         }
-        mapTileData[data.id] = data;
+        mapTileData[id] = tileType;
         childJson = childJson->next;
     }
     cJSON_Delete(json);
@@ -321,9 +314,9 @@ TileType GameWindow::getTileType(int mapX, int mapY, int mapSizeX, const tmx::Ti
         tileId -= fgid;
     }
     TileType tileType = TileType::None;
-    std::unordered_map<int, TileData>::iterator it = mapTileData.find(tileId);
+    std::unordered_map<int, TileType>::iterator it = mapTileData.find(tileId);
     if(it != mapTileData.end()) {
-        tileType = it->second.tileType;
+        tileType = it->second;
     }
     return tileType;
 }
