@@ -39,18 +39,6 @@ bool isGroundTile(TileType tileType)
     }
 }
 
-bool rect::intersects(const rect &other) const
-{
-    return ((x1 >= other.x1 && x1 <= other.x2) || (x2 >= other.x1 && x2 <= other.x2)) && 
-        ((y1 >= other.y1 && y1 <= other.y2) || (y2 >= other.y1 && y2 <= other.y2));
-}
-
-bool rect::intersects(int x, int y) const
-{
-    return x <= x2 && x >= x1 && 
-    y <= y2 && y >= y1;
-}
-
 SpriteConfig sonicSpriteCfg{
   "Sonic",
   {
@@ -94,6 +82,29 @@ bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces
         }
     }
     return false;
+}
+
+tripoint GameWindow::getTripointAtMapPoint(int mapX, int mapY)
+{
+    for(const SurfaceData& groundSurface : groundSurfaces) {
+        if(groundSurface.mapRect.intersects(mapX, mapY - 1)) {
+            return {
+                (mapX - groundSurface.mapRect.x1) + (mapY - groundSurface.mapRect.y1) / 2 + groundSurface.dimensions.x1, 
+                groundSurface.dimensions.y1, 
+                groundSurface.dimensions.z1 + (mapY - groundSurface.mapRect.y1)
+            };
+        }
+    }
+    for(const SurfaceData& wallSurface : wallSurfaces) {
+        if(wallSurface.mapRect.intersects(mapX, mapY)) {
+            if(wallSurface.dimensions.z2 > (wallSurface.dimensions.z1 + 1)) {
+                return (mapX - wallSurface.mapRect.x1) / 2;
+            } else {
+                return  wallSurface.dimensions.z2;
+            }
+        }
+    }
+    return {-1.f, -1.f, -1.f};
 }
 
 int GameWindow::getZLevelAtPoint(int mapX, int mapY)
@@ -221,8 +232,21 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
-    z0_x = wallSurfaces[0].mapRect.x1;
-    z0_y = wallSurfaces[0].mapRect.y1;
+    // convert to pixel dimensions
+    for(auto& sfc : wallSurfaces) {
+        sfc.mapRect.x1 *= 16;
+        sfc.mapRect.x2 *= 16;
+        sfc.mapRect.y1 *= 16;
+        sfc.mapRect.y2 *= 16;
+    }
+    for(auto& sfc : groundSurfaces) {
+        sfc.mapRect.x1 *= 16;
+        sfc.mapRect.x2 *= 16;
+        sfc.mapRect.y1 *= 16;
+        sfc.mapRect.y2 *= 16;
+    }
+    z0_x = bgWallSurfaces[0].mapRect.x1;
+    z0_y = bgWallSurfaces[0].mapRect.y1;
 }
 
 GameWindow::~GameWindow()

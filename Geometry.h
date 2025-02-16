@@ -22,6 +22,13 @@ struct Hitbox
     int h;
 };
 
+struct tripoint
+{
+    float x;
+    float y;
+    float z;
+};
+
 /// @brief 2D rectangular surface 
 struct rect
 {
@@ -66,4 +73,4 @@ enum CollisionType
 };
 
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl);
-//CollisionType check_collision(const cylinder& cyl1, const cylinder& cyl2);
+CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2);

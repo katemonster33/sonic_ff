@@ -5,6 +5,7 @@
 #include "Texture.h"
 #include "GameWindow.h"
 #include <SDL2/SDL_events.h>
+#include "Geometry.h"
 
 const float MAX_PLAYER_X_VELOCITY = 5.0f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
