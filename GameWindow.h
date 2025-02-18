@@ -6,6 +6,8 @@
 #include <tmxlite/Types.hpp>
 #include "Geometry.h"
 
+const float gravity_accel = 9.8f; // 9.8 m/s^2
+
 namespace tmx
 {
     class Map;

@@ -9,7 +9,7 @@
 
 const float MAX_PLAYER_X_VELOCITY = 5.0f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
-
+const float PLAYER_RUN_ACCEL = 5.0f; // 5 m/s^2
 
 
 class Actor

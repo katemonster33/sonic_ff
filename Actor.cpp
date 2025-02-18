@@ -115,7 +115,6 @@ void Actor::handle_input(const SDL_Event& event)
     }
 }
 
-
 CollisionType Actor::check_collision(GameWindow* parentWindow)
 {
     int cType = CollisionType::NoCollision;
@@ -133,6 +132,10 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
 
 // helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
 const double c_x_ratio = sqrt(5);
+
+float apply_gravity(float y_velocity, uint64_t frameTimeDelta) {
+    return y_velocity -= (gravity_accel * (frameTimeDelta / 1000.f));
+}
 
 void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
 {
@@ -153,7 +156,7 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
     int actualY = int(z * 2 / c_x_ratio) - jump_height - y;
     texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
-    if (colType == NoCollision || colType == Down) {
+    if (colType == NoCollision || colType & Down) {
         if (intent & MoveLeft) {
             x_velocity -= 0.1f;
             if (x_velocity < -5.0f) {
@@ -189,10 +192,12 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
         }
     }
     else {
-        if (colType & CollisionType::Left || colType & CollisionType::Right) {
+        if ((colType & CollisionType::Left && x_velocity < 0) || 
+            (colType & CollisionType::Right && x_velocity > 0)) {
             x_velocity = 0.0f;
         }
-        if (colType & CollisionType::Up || colType & CollisionType::Down) {
+        if ((colType & CollisionType::Up && y_velocity > 0) ||
+            (colType & CollisionType::Down && y_velocity < 0)) {
             y_velocity = 0;
         }
     }
