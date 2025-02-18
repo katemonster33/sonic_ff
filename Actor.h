@@ -16,6 +16,8 @@ class Actor
 {
     Rect2 spriteRect;
     Hitbox collisionGeometry;
+    int mapX;
+    int mapY;
     int x;
     int y;
     int height;
@@ -34,7 +36,7 @@ class Actor
     const SpriteGroup* activeGroup;
 	bool visible;
 public:
-	Actor( SpriteConfig *spriteConfig, Texture* texture, int startx, int starty, int startz);
+	Actor( SpriteConfig *spriteConfig, Texture* texture, int mapX, int mapY);
     ~Actor();
 
     void handle_input(const SDL_Event& event);

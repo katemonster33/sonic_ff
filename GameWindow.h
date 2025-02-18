@@ -39,7 +39,6 @@ class GameWindow
     int z0_x, z0_y;
     std::vector<SurfaceData> wallSurfaces, groundSurfaces;
     int getZLevelAtPoint(int mapX, int mapY);
-    tripoint getTripointAtMapPoint(int mapX, int mapY);
     void traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     void traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     void traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
@@ -68,6 +67,7 @@ public:
     struct SDL_Renderer *getRenderer() { return renderer;}
     size_t GetSizeX() { return size_x; }
     size_t GetSizeY() { return size_y; }
+    tripoint getTripointAtMapPoint(int mapX, int mapY);
 
     void handle_input(const union SDL_Event& event);
     const std::vector<SurfaceData> get_wall_geometries() const { return wallSurfaces; }

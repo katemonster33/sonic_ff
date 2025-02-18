@@ -1,12 +1,14 @@
 #include "Actor.h"
 #include "Geometry.h"
 
-Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int startx, int starty, int startz) :
+Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int mapX, int mapY) :
     spriteConfig(spriteConfig),
     texture(texture),
-    x(startx),
-    y(starty),
-    z(startz),
+    x(-1),
+    y(-1),
+    z(-1),
+    mapX(mapX),
+    mapY(mapY),
     x_velocity(0.0f),
     y_velocity(0.0f),
     z_velocity(0.0f),
@@ -134,6 +136,12 @@ const double c_x_ratio = sqrt(5);
 
 void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
 {
+    if(x == -1 && y == -1 && z == -1) {
+        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mapX, mapY);
+        x = actor_loc.x;
+        y = actor_loc.y;
+        z = actor_loc.z;
+    }
     if (height == -1) {
         height = parentWindow->getHeight(x, y);
     }

@@ -98,9 +98,17 @@ tripoint GameWindow::getTripointAtMapPoint(int mapX, int mapY)
     for(const SurfaceData& wallSurface : wallSurfaces) {
         if(wallSurface.mapRect.intersects(mapX, mapY)) {
             if(wallSurface.dimensions.z2 > (wallSurface.dimensions.z1 + 1)) {
-                return (mapX - wallSurface.mapRect.x1) / 2;
+                return {
+                    (mapX - wallSurface.mapRect.x1) / 2.f,
+                    (float)mapY,
+                    wallSurface.dimensions.z1 + (mapY - wallSurface.mapRect.y1) / 2.f
+                };
             } else {
-                return  wallSurface.dimensions.z2;
+                return {
+                    wallSurface.dimensions.x2 - wallSurface.dimensions.x1 + mapX, 
+                    wallSurface.dimensions.y2 - wallSurface.dimensions.y1 + mapY,
+                    wallSurface.dimensions.z2
+                };
             }
         }
     }
@@ -140,7 +148,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     this->window = window;
     this->renderer = renderer;
 
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), 50, 0, 50));
+    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), 13, 11));
 
     //load the textures as they're shared between layers
     const auto& tileSets = map.getTilesets();
@@ -163,7 +171,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     readJsonTileData();
     auto bgLayer = getLayerByName("Background");
     auto mapSize = map.getTileCount();
-    std::vector<SurfaceData> bgWallSurfaces, fgWallSurfaces, groundSurfaces, miscSurfaces;
+    std::vector<SurfaceData> bgWallSurfaces, fgWallSurfaces, miscSurfaces;
     if(bgLayer != nullptr) {
         for (auto x = 0u; x < mapSize.x; ++x) {
             int currentZ = 0;
@@ -232,19 +240,21 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
+    wallSurfaces.insert(wallSurfaces.end(), bgWallSurfaces.begin(), bgWallSurfaces.end());
+    wallSurfaces.insert(wallSurfaces.end(), fgWallSurfaces.begin(), fgWallSurfaces.end());
     // convert to pixel dimensions
-    for(auto& sfc : wallSurfaces) {
-        sfc.mapRect.x1 *= 16;
-        sfc.mapRect.x2 *= 16;
-        sfc.mapRect.y1 *= 16;
-        sfc.mapRect.y2 *= 16;
-    }
-    for(auto& sfc : groundSurfaces) {
-        sfc.mapRect.x1 *= 16;
-        sfc.mapRect.x2 *= 16;
-        sfc.mapRect.y1 *= 16;
-        sfc.mapRect.y2 *= 16;
-    }
+    // for(auto& sfc : wallSurfaces) {
+    //     sfc.mapRect.x1 *= 16;
+    //     sfc.mapRect.x2 *= 16;
+    //     sfc.mapRect.y1 *= 16;
+    //     sfc.mapRect.y2 *= 16;
+    // }
+    // for(auto& sfc : groundSurfaces) {
+    //     sfc.mapRect.x1 *= 16;
+    //     sfc.mapRect.x2 *= 16;
+    //     sfc.mapRect.y1 *= 16;
+    //     sfc.mapRect.y2 *= 16;
+    // }
     z0_x = bgWallSurfaces[0].mapRect.x1;
     z0_y = bgWallSurfaces[0].mapRect.y1;
 }
@@ -372,6 +382,7 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     surface.dimensions.z2 = currentZ + 1;
     surface.mapRect.x1 = mapX;
     surface.mapRect.x2 = mapX + 1;
+    
     while(surface.mapRect.x2 < (layer.getSize().x - 1) && isGroundTile(getTileType(surface.mapRect.x2 + 1, mapY, mapSize.x, layer))) {
         surface.mapRect.x2++;
     }
@@ -380,18 +391,26 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     surface.dimensions.y1 = surface.dimensions.y2 = mapY;
     surface.dimensions.y2++;
     surface.mapRect.y1 = surface.mapRect.y2 = mapY;
-    int xlen = surface.mapRect.x2 - surface.mapRect.x1;
+    int tmpX1 = surface.mapRect.x1;
+    int tmpX2 = surface.mapRect.x2;
+    TileType leftTile = getTileType(tmpX1, surface.mapRect.y2, mapSize.x, layer);
+    TileType rightTile = getTileType(tmpX2, surface.mapRect.y2, mapSize.x, layer);
     while(surface.mapRect.y2 < layer.getSize().y) {
-        TileType leftTile = getTileType(surface.mapRect.x2 - xlen, surface.mapRect.y2 + 1, mapSize.x, layer);
-        TileType rightTile = getTileType(surface.mapRect.x2, surface.mapRect.y2 + 1, mapSize.x, layer);
-        if(!((leftTile == TileType::GroundAngled1 && rightTile == TileType::GroundAngled3) || 
-            (leftTile == TileType::GroundAngled2 && rightTile == TileType::GroundAngled4))) {
-            break;
-        }
         if(leftTile == TileType::GroundAngled2) {
             // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
-            surface.mapRect.x2++;
+            tmpX1++;
         }
+        if(rightTile == TileType::GroundAngled4) {
+            // as we move down the pattern of ground tiles, adjust X to match the angle of the tiles
+            tmpX2++;
+        }
+        leftTile = getTileType(tmpX1, surface.mapRect.y2 + 1, mapSize.x, layer);
+        rightTile = getTileType(tmpX2, surface.mapRect.y2 + 1, mapSize.x, layer);
+        if(!((leftTile == TileType::GroundAngled1 || leftTile == TileType::GroundAngled2) || 
+            (rightTile == TileType::GroundAngled3 || rightTile == TileType::GroundAngled4))) {
+            break;
+        }
+        surface.mapRect.x2 = tmpX2;
         surface.mapRect.y2++;
         surface.dimensions.z2++;
     }
