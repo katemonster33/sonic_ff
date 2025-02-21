@@ -226,6 +226,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
+    wallSurfaces.insert(wallSurfaces.end(), bgWallSurfaces.begin(), bgWallSurfaces.end());
+    wallSurfaces.insert(wallSurfaces.end(), fgWallSurfaces.begin(), fgWallSurfaces.end());
     auto fgLayer = getLayerByName("Foreground");
     if(fgLayer != nullptr) {
         for(auto x = 0u; x < mapSize.x; x++) {
@@ -240,8 +242,6 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
-    wallSurfaces.insert(wallSurfaces.end(), bgWallSurfaces.begin(), bgWallSurfaces.end());
-    wallSurfaces.insert(wallSurfaces.end(), fgWallSurfaces.begin(), fgWallSurfaces.end());
     // convert to pixel dimensions
     // for(auto& sfc : wallSurfaces) {
     //     sfc.mapRect.x1 *= 16;
@@ -459,8 +459,7 @@ void GameWindow::traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, 
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mapX, mapY, mapSize.x, layer);
     TileType expectedTileType = TileType::None;
-    if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2)
-    {
+    if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2) {
         std::cout << "Bad map! Side-wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
         return;
     }
@@ -477,8 +476,7 @@ void GameWindow::traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, 
     surface.dimensions.x1 = surface.mapRect.x1;
     int ylen = surface.mapRect.y2 - surface.mapRect.y1;
     while(surface.mapRect.x2 < layer.getSize().x && 
-        surface.mapRect.y2 < layer.getSize().y)
-    {
+        surface.mapRect.y2 < layer.getSize().y) {
         TileType leftTile = getTileType(surface.mapRect.x2, surface.mapRect.y2 - ylen, mapSize.x, layer);
         TileType rightTile = getTileType(surface.mapRect.x2, surface.mapRect.y2, mapSize.x, layer);
         if(!((leftTile == TileType::SideWallAngled1 && rightTile == TileType::SideWallAngled4) || 
@@ -490,8 +488,7 @@ void GameWindow::traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, 
         surface.dimensions.z2 += 2;
     }
     surface.dimensions.x2 = surface.mapRect.x2;
-    if(surface.mapRect.y2 == mapY)
-    {
+    if(surface.mapRect.y2 == mapY) {
         std::cout << "Bad map! Did not parse a single column of side-wall tiles!" << std::endl;
     }
 }
@@ -540,8 +537,7 @@ GameWindow *GameWindow::Create()
     std::vector<std::unique_ptr<Texture>> textures;
     std::vector<std::unique_ptr<MapLayer>> renderLayers;
     tmx::Map map;
-    if (!map.load("assets/robotropolis.tmx"))
-    {
+    if (!map.load("assets/robotropolis.tmx")) {
         SDL_Log("Failed to load map: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -552,8 +548,7 @@ GameWindow *GameWindow::Create()
 
 void GameWindow::handle_input(const SDL_Event& event)
 {
-    for (Actor* actor : actors)
-    {
+    for (Actor* actor : actors) {
         actor->handle_input(event);
     }
 }
@@ -563,12 +558,10 @@ void GameWindow::drawFrame()
     curTime = SDL_GetTicks64();
     uint64_t frameDeltaTime = lastFrameTime - curTime;
     SDL_RenderClear(renderer);
-    for (const auto& l : renderLayers)
-    {
+    for (const auto& l : renderLayers) {
         l->draw(renderer);
     }
-    for (Actor* actor : actors)
-    {
+    for (Actor* actor : actors) {
         actor->draw(this, frameDeltaTime);
     }
     SDL_RenderPresent(renderer);
