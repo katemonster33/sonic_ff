@@ -16,10 +16,10 @@ struct Rect3 : public Rect2
 
 struct Hitbox
 {
-    int x;
-    int y;
-    int w;
-    int h;
+    float x;
+    float y;
+    float w;
+    float h;
 };
 
 struct tripoint

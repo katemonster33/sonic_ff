@@ -76,7 +76,7 @@ SpriteConfig sonicSpriteCfg{
 
 bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces, int mapX, int mapY)
 {
-    for(const auto& surface : surfaces){
+    for(const auto& surface : surfaces) {
         if(surface.mapRect.intersects(mapX, mapY)) {
             return true;
         }
@@ -89,7 +89,7 @@ tripoint GameWindow::getTripointAtMapPoint(int mapX, int mapY)
     for(const SurfaceData& groundSurface : groundSurfaces) {
         if(groundSurface.mapRect.intersects(mapX, mapY - 1)) {
             return {
-                (mapX - groundSurface.mapRect.x1) + (mapY - groundSurface.mapRect.y1) / 2 + groundSurface.dimensions.x1, 
+                (mapX - groundSurface.mapRect.x1) - float(mapY - groundSurface.mapRect.y1) / 2 + groundSurface.dimensions.x1, 
                 groundSurface.dimensions.y1, 
                 groundSurface.dimensions.z1 + (mapY - groundSurface.mapRect.y1)
             };

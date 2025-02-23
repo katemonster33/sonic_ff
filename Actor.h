@@ -18,12 +18,12 @@ class Actor
     Hitbox collisionGeometry;
     int mapX;
     int mapY;
-    int x;
-    int y;
+    float x;
+    float y;
     int height;
     int jump_height;
     float jump_velocity;
-    int z;
+    float z;
     float x_velocity;
     float y_velocity;
     float z_velocity;
