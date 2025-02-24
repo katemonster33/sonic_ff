@@ -556,13 +556,13 @@ void GameWindow::handle_input(const SDL_Event& event)
 void GameWindow::drawFrame()
 {
     curTime = SDL_GetTicks64();
-    uint64_t frameDeltaTime = lastFrameTime - curTime;
+    uint64_t frameDeltaTime = curTime - lastFrameTime;
     SDL_RenderClear(renderer);
     for (const auto& l : renderLayers) {
         l->draw(renderer);
     }
     for (Actor* actor : actors) {
-        actor->draw(this, frameDeltaTime);
+        actor->draw(this, frameDeltaTime / 1000.f);
     }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;

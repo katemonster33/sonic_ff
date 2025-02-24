@@ -17,12 +17,18 @@ enum class ActorState
 enum ActorIntent
 {
     NoIntent = 0,
-    MoveLeft = 1,
-    MoveRight = 2,
-    MoveForward = 4,
-    MoveBack = 8,
-    Jump = 16,
-    Attack = 32,
-    Crouch = 64,
+    Run = 1,
+    Jump = 2,
+    Attack = 4,
+    Crouch = 8,
 
+};
+
+enum MovementKeysDown
+{
+    MKeyNone = 0,
+    MKeyDown = 1,
+    MKeyUp = 2,
+    MKeyLeft = 4,
+    MKeyRight = 8
 };

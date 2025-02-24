@@ -8,6 +8,8 @@
 #include "Geometry.h"
 
 const float MAX_PLAYER_X_VELOCITY = 5.0f;
+const float MIN_PLAYER_Y_VELOCITY = -5.f;
+const float MAX_PLAYER_JUMP_VELOCITY = 5.f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
 const float PLAYER_RUN_ACCEL = 5.0f; // 5 m/s^2
 
@@ -20,16 +22,16 @@ class Actor
     int mapY;
     float x;
     float y;
-    int height;
-    int jump_height;
-    float jump_velocity;
     float z;
-    float x_velocity;
+    float intentMoveAngle;
+    float intentMovePercent;
+    float curMoveAngle;
+    float curMoveVelocity;
     float y_velocity;
-    float z_velocity;
     ActorState lastFrameState;
 	ActorState state;
     int intent;
+    int intentMoveKeys;
     Texture* texture;
     size_t spriteGroupIndex;
 	SpriteConfig *spriteConfig;
@@ -44,5 +46,5 @@ public:
 	ActorState GetState() { return state; }
 
     CollisionType check_collision(GameWindow *parentWindow);
-    void draw(GameWindow *parentWindow, uint64_t frameTimeDelta);
+    void draw(GameWindow *parentWindow, float deltaQuotient);
 };

@@ -9,16 +9,16 @@ Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int mapX, int mapY) :
     z(-1),
     mapX(mapX),
     mapY(mapY),
-    x_velocity(0.0f),
+    intentMoveAngle(0.0f),
+    intentMovePercent(0.0f),
+    curMoveVelocity(0.0f),
+    curMoveAngle(0.0f),
     y_velocity(0.0f),
-    z_velocity(0.0f),
     collisionGeometry({-1.f, -1.f, -1.f, -1.f}),
-    height(-1),
-    jump_height(0),
-    jump_velocity(0.0f),
     state(ActorState::Default),
     lastFrameState(ActorState::Default),
     intent(NoIntent),
+    intentMoveKeys(MKeyNone),
     visible(true),
     spriteGroupIndex(0),
     activeGroup(nullptr)
@@ -33,37 +33,25 @@ Actor::~Actor()
 
 void Actor::handle_input(const SDL_Event& event) 
 {
+    int lastMoveKeys = intentMoveKeys;
     switch (event.type) {
     case SDL_KEYDOWN:
         switch (event.key.keysym.sym) {
         case SDLK_UP:
         case SDLK_w:
-            intent &= ~MoveForward;
-            intent |= MoveBack;
-            if (!(intent & Attack)) {
-                state = ActorState::Running;
-            }
+            intentMoveKeys |= MKeyUp;
             break;
         case SDLK_DOWN:
         case SDLK_s:
-            intent &= ~MoveBack;
-            intent |= MoveForward;
-            if (!(intent & Attack)) {
-                state = ActorState::Running;
-            }
+            intentMoveKeys |= MKeyDown;
             break;
         case SDLK_LEFT:
         case SDLK_a:
-            intent &= ~MoveRight;
-            intent |= MoveLeft;
-            if (!(intent & Attack)) {
-                state = ActorState::Running;
-            }
+            intentMoveKeys |= MKeyLeft;
             break;
         case SDLK_RIGHT:
         case SDLK_d:
-            intent &= ~MoveLeft;
-            intent |= MoveRight;
+            intentMoveKeys |= MKeyRight;
             if (!(intent & Attack)) {
                 state = ActorState::Running;
             }
@@ -81,19 +69,19 @@ void Actor::handle_input(const SDL_Event& event)
         switch (event.key.keysym.sym) {
         case SDLK_UP:
         case SDLK_w:
-            intent &= ~MoveBack;
+            intentMoveKeys &= ~MKeyUp;
             break;
         case SDLK_DOWN:
         case SDLK_s:
-            intent &= ~MoveForward;
+            intentMoveKeys &= ~MKeyDown;
             break;
         case SDLK_LEFT:
         case SDLK_a:
-            intent &= ~MoveLeft;
+            intentMoveKeys &= ~MKeyLeft;
             break;
         case SDLK_RIGHT:
         case SDLK_d:
-            intent &= ~MoveRight;
+            intentMoveKeys &= ~MKeyRight;
             break;
         case SDLK_LCTRL:
             intent &= Attack;
@@ -103,6 +91,42 @@ void Actor::handle_input(const SDL_Event& event)
             break;
         }
         break;
+    }
+    if(lastMoveKeys != intentMoveKeys) {
+        if(intentMoveKeys != MKeyNone) {
+            intent |= Run;
+            switch(intentMoveKeys) {
+                case MKeyUp:
+                    intentMoveAngle = 0.f;
+                    break;
+                case MKeyUp | MKeyRight:
+                    intentMoveAngle = 45.f;
+                    break;
+                case MKeyRight:
+                    intentMoveAngle = 90.f;
+                    break;
+                case MKeyRight | MKeyDown:
+                    intentMoveAngle = 135.f;
+                    break;
+                case MKeyDown:
+                    intentMoveAngle = 180.f;
+                    break;
+                case MKeyDown | MKeyLeft:
+                    intentMoveAngle = 225.f;
+                    break;
+                case MKeyLeft:
+                    intentMoveAngle = 270.f;
+                    break;
+                case MKeyLeft | MKeyUp:
+                    intentMoveAngle = 315.f;
+                    break;
+            }
+            intentMovePercent = 1.f;
+        } else {
+            intent &= Run;
+            intentMovePercent = 0.f;
+            intentMoveAngle = 0.f;
+        }
     }
     if (activeGroup == nullptr || activeGroup->groupState != state) {
         for (const SpriteGroup& sg : spriteConfig->spriteGroups) {
@@ -138,16 +162,13 @@ float apply_gravity(float y_velocity, uint64_t frameTimeDelta) {
     return y_velocity -= (gravity_accel * (frameTimeDelta / 1000.f));
 }
 
-void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
+void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
 {
     if(x == -1 && y == -1 && z == -1) {
         tripoint actor_loc = parentWindow->getTripointAtMapPoint(mapX, mapY);
         x = actor_loc.x;
         y = actor_loc.y;
         z = actor_loc.z;
-    }
-    if (height == -1) {
-        height = parentWindow->getHeight(x, y);
     }
     if (activeGroup == nullptr) {
         activeGroup = &spriteConfig->spriteGroups[0];
@@ -158,104 +179,67 @@ void Actor::draw(GameWindow* parentWindow, uint64_t frameTimeDelta)
         collisionGeometry.w = spriteRect.w;
         collisionGeometry.h = spriteRect.h;
     }
-    int actualX = int((x * 16) + (z / c_x_ratio * 16));
-    int actualY = int((z * 16 * 2 / c_x_ratio) + (y * 16));
-    texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
     CollisionType colType = check_collision(parentWindow);
-    if (colType == NoCollision || colType & Down) {
-        if (intent & MoveLeft) {
-            x_velocity -= 0.1f;
-            if (x_velocity < -5.0f) {
-                x_velocity = -5.0f;
+    if(intent & Run) {
+        if(intentMoveAngle != curMoveAngle) {
+            if(intentMoveAngle < curMoveAngle) {
+                intentMoveAngle += std::min(3.f, curMoveAngle - intentMoveAngle);
+            } else {
+                intentMoveAngle -= std::min(3.f, intentMoveAngle - curMoveAngle);
             }
+            curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient) / 2;
+        } else {
+            curMoveVelocity += (PLAYER_RUN_ACCEL * deltaQuotient);
         }
-        else if (x_velocity < -0.1f) {
-            x_velocity += 0.1f;
+        if(curMoveVelocity > MAX_PLAYER_X_VELOCITY) {
+            curMoveVelocity = MAX_PLAYER_X_VELOCITY;
         }
-        if (intent & MoveRight) {
-            x_velocity += 0.1f;
-            if (x_velocity > 5.0f) {
-                x_velocity = 5.0f;
+    } else {
+        if (curMoveVelocity > 0.f) {
+            curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient);
+            if(curMoveVelocity <= 0.f) {
+                curMoveVelocity = 0.f;
+                curMoveAngle = 0.f;
             }
-        } else if (x_velocity > 0.1f) {
-            x_velocity -= 0.1f;
-        }
-        if (intent & MoveBack) {
-            z_velocity -= 0.1f;
-            if (z_velocity < -1.0f) {
-                z_velocity = -1.0f;
-            }
-        } else if(z_velocity < -0.1f) {
-            z_velocity += 0.1f;
-        }
-        if (intent & MoveForward) {
-            z_velocity += 0.1f;
-            if (z_velocity > 1.0f) {
-                z_velocity = 1.0f;
-            }
-        } else if(z_velocity > 0.1f) {
-            z_velocity -= 0.1f;
         }
     }
-    else {
-        if ((colType & CollisionType::Left && x_velocity < 0) || 
-            (colType & CollisionType::Right && x_velocity > 0)) {
-            x_velocity = 0.0f;
+    if(curMoveVelocity != 0.0f) {
+        float percentZ = abs(curMoveAngle - 180)/90-1;
+        float percentX = -abs(curMoveAngle + 90)/90-1;
+        float xmove = curMoveVelocity * percentX * deltaQuotient;
+        if((colType & Left && xmove < 0.f) || 
+            (colType & Right && xmove > 0.f)) {
+                xmove = 0.f;
         }
-        if ((colType & CollisionType::Up && y_velocity > 0) ||
-            (colType & CollisionType::Down && y_velocity < 0)) {
-            y_velocity = 0;
+        x += xmove;
+        float zmove = curMoveVelocity * percentZ * deltaQuotient;
+        if((colType & Front && zmove < 0.f) || 
+            (colType & Back && zmove > 0.f)) {
+                zmove = 0.f;
         }
+        z += zmove;
     }
 
     if (intent & Jump) {
-        if (jump_height < 3) {
-            if (jump_velocity < 10.0f) {
-                jump_velocity += 1.0f;
-            }
-        }
-        else if (jump_height >= 8) {
-            jump_velocity -= 0.4f;
-        }
-        else if (y <= 0 && jump_velocity <= 0.0f) {
-            jump_height = 0;
-            jump_velocity = 0.0f;
+        if(colType & Down) {
+            y_velocity = MAX_PLAYER_JUMP_VELOCITY;
         }
     }
-    else if (jump_velocity > 0.0f) {
-        if (colType & CollisionType::Down) {
-            y += jump_height;
-            jump_height = 0;
-            jump_velocity = 0.0f;
+    if(!(colType & Down)) {
+        y_velocity -= gravity_accel * deltaQuotient;
+        if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
+            y_velocity = MIN_PLAYER_Y_VELOCITY;
         }
-        else if (jump_velocity > -10.0f) {
-            jump_velocity -= 0.4f;
-        }
-    }
-    jump_height += jump_velocity;
-    x += x_velocity;
-    if (x > int(parentWindow->GetSizeX() - spriteRect.w)) {
-        x = parentWindow->GetSizeX() - spriteRect.w;
-    }
-    else if (x < 0) {
-        x = 0;
-    }
-    z += z_velocity;
-    if (z < 0) {
-        z = 0;
-    }
-    if (y_velocity != 0.0f) {
         y += y_velocity;
-        if (y > int(parentWindow->GetSizeY() - spriteRect.h)) {
-            y = parentWindow->GetSizeY() - spriteRect.h;
-        } else if (y < 0) {
-            y = 0.0f;
-        }
     }
-    if (state == ActorState::Running && x_velocity != 0.0f && y_velocity != 0.0f) {
+    if (state == ActorState::Running) {
         spriteGroupIndex++;
         if (spriteGroupIndex == activeGroup->sprites.size()) {
             spriteGroupIndex = 0;
         }
     }
+
+    int actualX = int((x * 16) + (z / c_x_ratio * 16));
+    int actualY = int((z * 16 * 2 / c_x_ratio) + (y * 16));
+    texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
 }
