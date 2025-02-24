@@ -145,9 +145,9 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
     int cType = CollisionType::NoCollision;
     cylinder c;
     c.x = x + collisionGeometry.x;
-    c.y1 = y + collisionGeometry.y;
-    c.y2 = y + collisionGeometry.y + collisionGeometry.h;
-    c.r = collisionGeometry.w / 2;
+    c.y1 = y + collisionGeometry.y - 1;
+    c.y2 = y + collisionGeometry.y;
+    c.r = 0.5f;
     c.z = z;
     for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
         cType |= get_collision(wallGeometry.dimensions, c);
@@ -157,10 +157,6 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
 
 // helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
 const double c_x_ratio = sqrt(5);
-
-float apply_gravity(float y_velocity, uint64_t frameTimeDelta) {
-    return y_velocity -= (gravity_accel * (frameTimeDelta / 1000.f));
-}
 
 void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
 {
@@ -181,18 +177,22 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
     }
     CollisionType colType = check_collision(parentWindow);
     if(intent & Run) {
-        if(intentMoveAngle != curMoveAngle) {
-            if(intentMoveAngle < curMoveAngle) {
-                intentMoveAngle += std::min(3.f, curMoveAngle - intentMoveAngle);
-            } else {
-                intentMoveAngle -= std::min(3.f, intentMoveAngle - curMoveAngle);
+        if(intentMoveAngle != curMoveAngle && curMoveVelocity != 0.f) {
+            if (intentMoveAngle < curMoveAngle) {
+                curMoveAngle += std::min(3.f, curMoveAngle - intentMoveAngle);
+            }
+            else {
+                curMoveAngle -= std::min(3.f, intentMoveAngle - curMoveAngle);
             }
             curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient) / 2;
         } else {
+            curMoveAngle = intentMoveAngle;
             curMoveVelocity += (PLAYER_RUN_ACCEL * deltaQuotient);
         }
         if(curMoveVelocity > MAX_PLAYER_X_VELOCITY) {
             curMoveVelocity = MAX_PLAYER_X_VELOCITY;
+        } else if (curMoveVelocity < 0.f) {
+            curMoveVelocity = 0.f;
         }
     } else {
         if (curMoveVelocity > 0.f) {
@@ -204,8 +204,15 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
         }
     }
     if(curMoveVelocity != 0.0f) {
-        float percentZ = abs(curMoveAngle - 180)/90-1;
-        float percentX = -abs(curMoveAngle + 90)/90-1;
+        // 0,1;90,0;180,-1;270;0,360,1
+        float percentZ = abs(fmod(curMoveAngle, 360) - 180)/90-1;
+        // 0,0;90,1;180,0;270,-1;360,0
+        float percentX = 0;
+        //if (curMoveAngle >= 0 && curMoveAngle <= 90) {
+        //    percentX = curMoveAngle / 90;
+        //} else {
+            percentX = abs(fmod(curMoveAngle - 90, 360) - 180) / 90 - 1;
+        //}
         float xmove = curMoveVelocity * percentX * deltaQuotient;
         if((colType & Left && xmove < 0.f) || 
             (colType & Right && xmove > 0.f)) {
@@ -230,7 +237,7 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
         if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
             y_velocity = MIN_PLAYER_Y_VELOCITY;
         }
-        y += y_velocity;
+        y -= y_velocity;
     }
     if (state == ActorState::Running) {
         spriteGroupIndex++;

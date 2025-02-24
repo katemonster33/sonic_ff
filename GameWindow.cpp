@@ -564,6 +564,13 @@ void GameWindow::drawFrame()
     for (Actor* actor : actors) {
         actor->draw(this, frameDeltaTime / 1000.f);
     }
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    for (const auto& geometry : get_wall_geometries()) {
+        SDL_RenderDrawLine(renderer, geometry.mapRect.x1 * 16, geometry.mapRect.y1 * 16, geometry.mapRect.x2 * 16, geometry.mapRect.y2 * 16);
+    }
+    for (const auto& geometry : get_ground_geometries()) {
+        SDL_RenderDrawLine(renderer, geometry.mapRect.x1 * 16, geometry.mapRect.y1 * 16, geometry.mapRect.x2 * 16, geometry.mapRect.y2 * 16);
+    }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
 }
