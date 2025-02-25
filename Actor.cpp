@@ -123,7 +123,7 @@ void Actor::handle_input(const SDL_Event& event)
             }
             intentMovePercent = 1.f;
         } else {
-            intent &= Run;
+            intent &= ~Run;
             intentMovePercent = 0.f;
             intentMoveAngle = 0.f;
         }
@@ -178,13 +178,17 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
     CollisionType colType = check_collision(parentWindow);
     if(intent & Run) {
         if(intentMoveAngle != curMoveAngle && curMoveVelocity != 0.f) {
-            if (intentMoveAngle < curMoveAngle) {
-                curMoveAngle += std::min(3.f, curMoveAngle - intentMoveAngle);
+            if (intentMoveAngle == abs(curMoveAngle - 180)) {
+                curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient);
+            } else {
+                if (fmod(intentMoveAngle + 180, 360) < curMoveAngle) {
+                    curMoveAngle -= std::min(3.f, curMoveAngle - intentMoveAngle);
+                }
+                else {
+                    curMoveAngle += std::min(3.f, intentMoveAngle - curMoveAngle);
+                }
+                curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient) / 2;
             }
-            else {
-                curMoveAngle -= std::min(3.f, intentMoveAngle - curMoveAngle);
-            }
-            curMoveVelocity -= (PLAYER_RUN_ACCEL * deltaQuotient) / 2;
         } else {
             curMoveAngle = intentMoveAngle;
             curMoveVelocity += (PLAYER_RUN_ACCEL * deltaQuotient);
@@ -205,14 +209,9 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
     }
     if(curMoveVelocity != 0.0f) {
         // 0,1;90,0;180,-1;270;0,360,1
-        float percentZ = abs(fmod(curMoveAngle, 360) - 180)/90-1;
+        float percentZ = -(abs(fmod(curMoveAngle, 360) - 180)/90-1);
         // 0,0;90,1;180,0;270,-1;360,0
-        float percentX = 0;
-        //if (curMoveAngle >= 0 && curMoveAngle <= 90) {
-        //    percentX = curMoveAngle / 90;
-        //} else {
-            percentX = abs(fmod(curMoveAngle - 90, 360) - 180) / 90 - 1;
-        //}
+        float percentX = abs(fmod(curMoveAngle + 270, 360) - 180) / 90 - 1;
         float xmove = curMoveVelocity * percentX * deltaQuotient;
         if((colType & Left && xmove < 0.f) || 
             (colType & Right && xmove > 0.f)) {
@@ -232,13 +231,13 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
             y_velocity = MAX_PLAYER_JUMP_VELOCITY;
         }
     }
-    if(!(colType & Down)) {
-        y_velocity -= gravity_accel * deltaQuotient;
-        if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
-            y_velocity = MIN_PLAYER_Y_VELOCITY;
-        }
-        y -= y_velocity;
-    }
+    //if(!(colType & Down)) {
+    //    y_velocity -= gravity_accel * deltaQuotient;
+    //    if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
+    //        y_velocity = MIN_PLAYER_Y_VELOCITY;
+    //    }
+    //    y -= y_velocity;
+    //}
     if (state == ActorState::Running) {
         spriteGroupIndex++;
         if (spriteGroupIndex == activeGroup->sprites.size()) {

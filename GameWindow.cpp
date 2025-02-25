@@ -441,7 +441,6 @@ void GameWindow::traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx:
         surface.mapRect.x2++;
     }
     surface.dimensions.z1 = surface.dimensions.z2 = currentZ;
-    surface.dimensions.z2++;
     surface.dimensions.x1 = surface.mapRect.x1;
     surface.dimensions.x2 = surface.mapRect.x2;
     surface.dimensions.y1 = surface.mapRect.y1;
@@ -569,7 +568,14 @@ void GameWindow::drawFrame()
         SDL_RenderDrawLine(renderer, geometry.mapRect.x1 * 16, geometry.mapRect.y1 * 16, geometry.mapRect.x2 * 16, geometry.mapRect.y2 * 16);
     }
     for (const auto& geometry : get_ground_geometries()) {
+
         SDL_RenderDrawLine(renderer, geometry.mapRect.x1 * 16, geometry.mapRect.y1 * 16, geometry.mapRect.x2 * 16, geometry.mapRect.y2 * 16);
+        const double c_x_ratio = sqrt(5);   
+        int actualX1 = int((geometry.dimensions.x1 + geometry.dimensions.z1 / c_x_ratio));
+        int actualY1 = int((geometry.dimensions.z1 * 2 / c_x_ratio + geometry.dimensions.y1));
+        int actualX2 = int((geometry.dimensions.x2 + geometry.dimensions.z2 / c_x_ratio));
+        int actualY2 = int((geometry.dimensions.z2 * 2 / c_x_ratio) + geometry.dimensions.y2);
+        SDL_RenderDrawLine(renderer, actualX1 * 16, actualY1 * 16, actualX2 * 16, actualY2 * 16);
     }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
