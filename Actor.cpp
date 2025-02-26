@@ -4,11 +4,8 @@
 Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int mapX, int mapY) :
     spriteConfig(spriteConfig),
     texture(texture),
-    x(-1),
-    y(-1),
-    z(-1),
-    mapX(mapX),
-    mapY(mapY),
+    mappos({-1,-1}),
+    realpos({-1.f, -1.f, -1.f}),
     intentMoveAngle(0.0f),
     intentMovePercent(0.0f),
     curMoveVelocity(0.0f),
@@ -144,27 +141,24 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
 {
     int cType = CollisionType::NoCollision;
     cylinder c;
-    c.x = x + collisionGeometry.x;
-    c.y1 = y + collisionGeometry.y - 1;
-    c.y2 = y + collisionGeometry.y;
+    c.x = realpos.x + collisionGeometry.x;
+    c.y1 = realpos.y + collisionGeometry.y - 1;
+    c.y2 = realpos.y + collisionGeometry.y;
     c.r = 0.5f;
-    c.z = z;
+    c.z = realpos.z;
     for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
         cType |= get_collision(wallGeometry.dimensions, c);
     }
     return (CollisionType)cType;
 }
 
-// helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
-const double c_x_ratio = sqrt(5);
-
 void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
 {
-    if(x == -1 && y == -1 && z == -1) {
-        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mapX, mapY);
-        x = actor_loc.x;
-        y = actor_loc.y;
-        z = actor_loc.z;
+    if(realpos.x == -1 && realpos.y == -1 && realpos.z == -1) {
+        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mappos.x, mappos.y);
+        realpos.x = actor_loc.x;
+        realpos.y = actor_loc.y;
+        realpos.z = actor_loc.z;
     }
     if (activeGroup == nullptr) {
         activeGroup = &spriteConfig->spriteGroups[0];
@@ -217,13 +211,13 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
             (colType & Right && xmove > 0.f)) {
                 xmove = 0.f;
         }
-        x += xmove;
+        realpos.x += xmove;
         float zmove = curMoveVelocity * percentZ * deltaQuotient;
         if((colType & Front && zmove < 0.f) || 
             (colType & Back && zmove > 0.f)) {
                 zmove = 0.f;
         }
-        z += zmove;
+        realpos.z += zmove;
     }
 
     if (intent & Jump) {
@@ -245,7 +239,7 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
         }
     }
 
-    int actualX = int((x * 16) + (z / c_x_ratio * 16));
-    int actualY = int((z * 16 * 2 / c_x_ratio) + (y * 16));
-    texture->draw(spriteRect.x, spriteRect.y, actualX, actualY, spriteRect.w, spriteRect.h);
+    int actualX = 0, actualY = 0;
+    getPixelPosFromRealPos(realpos, actualX, actualY);
+    texture->draw(spriteRect.x, spriteRect.y, int(actualX), int(actualY), spriteRect.w, spriteRect.h);
 }

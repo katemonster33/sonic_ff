@@ -18,11 +18,8 @@ class Actor
 {
     Rect2 spriteRect;
     Hitbox collisionGeometry;
-    int mapX;
-    int mapY;
-    float x;
-    float y;
-    float z;
+    mappoint mappos;
+    tripoint realpos;
     float intentMoveAngle;
     float intentMovePercent;
     float curMoveAngle;

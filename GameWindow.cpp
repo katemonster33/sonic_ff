@@ -570,7 +570,7 @@ void GameWindow::drawFrame()
     for (const auto& geometry : get_ground_geometries()) {
 
         SDL_RenderDrawLine(renderer, geometry.mapRect.x1 * 16, geometry.mapRect.y1 * 16, geometry.mapRect.x2 * 16, geometry.mapRect.y2 * 16);
-        const double c_x_ratio = sqrt(5);   
+        
         int actualX1 = int((geometry.dimensions.x1 + geometry.dimensions.z1 / c_x_ratio));
         int actualY1 = int((geometry.dimensions.z1 * 2 / c_x_ratio + geometry.dimensions.y1));
         int actualX2 = int((geometry.dimensions.x2 + geometry.dimensions.z2 / c_x_ratio));

@@ -1,4 +1,8 @@
 #pragma once 
+#include <cmath>
+
+// helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
+const double c_x_ratio = sqrt(5);
 
 struct Rect2
 {
@@ -8,18 +12,18 @@ struct Rect2
     int h;
 };
 
-struct Rect3 : public Rect2
-{
-    int z;
-    int d;
-};
-
 struct Hitbox
 {
     float x;
     float y;
     float w;
     float h;
+};
+
+struct mappoint
+{
+    int x;
+    int y;
 };
 
 struct tripoint
@@ -74,3 +78,7 @@ enum CollisionType
 
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl);
 CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2);
+
+void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY);
+void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);
+void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, int z);
