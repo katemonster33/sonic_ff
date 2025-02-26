@@ -1,10 +1,10 @@
 #include "Actor.h"
 #include "Geometry.h"
 
-Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, int mapX, int mapY) :
+Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :
     spriteConfig(spriteConfig),
     texture(texture),
-    mappos({-1,-1}),
+    mappos(mt),
     realpos({-1.f, -1.f, -1.f}),
     intentMoveAngle(0.0f),
     intentMovePercent(0.0f),
@@ -155,7 +155,7 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
 void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
 {
     if(realpos.x == -1 && realpos.y == -1 && realpos.z == -1) {
-        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mappos.x, mappos.y);
+        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mappos);
         realpos.x = actor_loc.x;
         realpos.y = actor_loc.y;
         realpos.z = actor_loc.z;

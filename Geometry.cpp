@@ -2,16 +2,16 @@
 #include <cmath>
 
 
-bool rect::intersects(const rect &other) const
+bool maprect::intersects(const maprect &other) const
 {
-    return ((x1 >= other.x1 && x1 <= other.x2) || (x2 >= other.x1 && x2 <= other.x2)) && 
-        ((y1 >= other.y1 && y1 <= other.y2) || (y2 >= other.y1 && y2 <= other.y2));
+    return ((p1.x >= other.p1.x && p1.x <= other.p2.x) || (p2.x >= other.p1.x && p2.x <= other.p2.x)) && 
+        ((p1.y >= other.p1.y && p1.y <= other.p2.y) || (p2.y >= other.p1.y && p2.y <= other.p2.y));
 }
 
-bool rect::intersects(int x, int y) const
+bool maprect::intersects(const mappoint &p) const
 {
-    return x <= x2 && x >= x1 && 
-    y <= y2 && y >= y1;
+    return p.x <= p2.x && p.x >= p1.x && 
+    p.y <= p2.y && p.y >= p1.y;
 }
 
 float triangulate(float a, float b)
@@ -22,54 +22,54 @@ float triangulate(float a, float b)
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl)
 {
     int cType = CollisionType::NoCollision;
-    if ((cyl.y1 >= cube.y1 && cyl.y1 <= cube.y2) ||
-            (cyl.y2 >= cube.y1 && cyl.y2 <= cube.y2)) {
-        if (cyl.x >= cube.x1 && cyl.x <= cube.x2 &&
-            cyl.z >= cube.z1 && cyl.z <= cube.z2) {
-            if (cyl.x >= cube.x1) {
+    if ((cyl.y1 >= cube.p1.y && cyl.y1 <= cube.p2.y) ||
+            (cyl.y2 >= cube.p1.y && cyl.y2 <= cube.p2.y)) {
+        if (cyl.x >= cube.p1.x && cyl.x <= cube.p2.x &&
+            cyl.z >= cube.p1.z && cyl.z <= cube.p2.z) {
+            if (cyl.x >= cube.p1.x) {
                 cType |= CollisionType::Left;
             }
-            if (cyl.x <= cube.x2) {
+            if (cyl.x <= cube.p2.x) {
                 cType |= CollisionType::Right;
             }
-            if (cyl.z >= cube.z1) {
+            if (cyl.z >= cube.p1.z) {
                 cType |= CollisionType::Front;
             }
-            if (cyl.z <= cube.z2) {
+            if (cyl.z <= cube.p2.z) {
                 cType |= CollisionType::Back;
             }
 
         }
-        else if (cyl.x < cube.x1 && (cyl.x + cyl.r) >= cube.x1) {
-            int xdist = cube.x1 - cyl.x;
-            if ((cyl.z + cyl.r) >= cube.z1 && triangulate(xdist, cube.z1 - cyl.z) < cyl.r) {
+        else if (cyl.x < cube.p1.x && (cyl.x + cyl.r) >= cube.p1.x) {
+            int xdist = cube.p1.x - cyl.x;
+            if ((cyl.z + cyl.r) >= cube.p1.z && triangulate(xdist, cube.p1.z - cyl.z) < cyl.r) {
                 cType = CollisionType::Front | CollisionType::Left;
             }
-            else if ((cyl.z - cyl.r) <= cube.z2 && triangulate(xdist, cyl.z - cube.z2) < cyl.r) {
+            else if ((cyl.z - cyl.r) <= cube.p2.z && triangulate(xdist, cyl.z - cube.p2.z) < cyl.r) {
                 cType = CollisionType::Back | CollisionType::Left;
             }
         }
-        else if (cyl.x > cube.x2 && (cyl.x - cyl.r) <= cube.x2) {
-            int xdist = cyl.x - cube.x2;
-            if ((cyl.z + cyl.r) >= cube.z1 && triangulate(xdist, cube.z1 - cyl.z) < cyl.r) {
+        else if (cyl.x > cube.p2.x && (cyl.x - cyl.r) <= cube.p2.x) {
+            int xdist = cyl.x - cube.p2.x;
+            if ((cyl.z + cyl.r) >= cube.p1.z && triangulate(xdist, cube.p1.z - cyl.z) < cyl.r) {
                 cType = CollisionType::Front | CollisionType::Right;
             }
-            else if ((cyl.z - cyl.r) <= cube.z2 && triangulate(xdist, cyl.z - cube.z2)) {
+            else if ((cyl.z - cyl.r) <= cube.p2.z && triangulate(xdist, cyl.z - cube.p2.z)) {
                 cType = CollisionType::Back | CollisionType::Right;
             }
         }
         if (cType != CollisionType::NoCollision) {
-            if (cyl.y2 == cube.y1) {
+            if (cyl.y2 == cube.p1.y) {
                 cType = CollisionType::Down;
             }
-            else if (cyl.y1 == cube.y2) {
+            else if (cyl.y1 == cube.p2.y) {
                 cType = CollisionType::Up;
             }
             else {
-                if (cyl.y2 > cube.y1) {
+                if (cyl.y2 > cube.p1.y) {
                     cType |= CollisionType::Down;
                 }
-                if (cyl.y1 < cube.y2) {
+                if (cyl.y1 < cube.p2.y) {
                     cType |= CollisionType::Up;
                 }
             }

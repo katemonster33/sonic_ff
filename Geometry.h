@@ -34,26 +34,20 @@ struct tripoint
 };
 
 /// @brief 2D rectangular surface 
-struct rect
+struct maprect
 {
-    int x1;
-    int y1;
-    int x2;
-    int y2;
+    mappoint p1;
+    mappoint p2;
 
-    bool intersects(const rect& other) const;
-    bool intersects(int x, int y) const;
+    bool intersects(const maprect& other) const;
+    bool intersects(const mappoint &p) const;
 };
 
 /// @brief 3D cuboid surface, for handling absolute dimensions of a collidable surface
 struct cuboid
 {
-    float x1;
-    float y1;
-    float z1;
-    float x2;
-    float y2;
-    float z2;
+    tripoint p1;
+    tripoint p2;
 };
 
 struct cylinder

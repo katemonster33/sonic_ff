@@ -33,7 +33,6 @@ source distribution.
 #include <array>
 #include <cassert>
 #include <cjson/cJSON.h>
-#include <stdio.h>
 
 MapLayer::MapLayer()
 {

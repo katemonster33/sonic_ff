@@ -35,7 +35,7 @@ class Actor
     const SpriteGroup* activeGroup;
 	bool visible;
 public:
-	Actor( SpriteConfig *spriteConfig, Texture* texture, int mapX, int mapY);
+	Actor( SpriteConfig *spriteConfig, Texture* texture, const mappoint &mt);
     ~Actor();
 
     void handle_input(const SDL_Event& event);

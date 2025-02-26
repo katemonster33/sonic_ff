@@ -14,6 +14,16 @@ namespace tmx
     class TileLayer;
 }
 
+enum class TileLayerId
+{
+    None,
+    BackgroundWall,
+    ForegroundWall,
+    Ground,
+    Obstacle,
+    Any
+};
+
 enum class TileType
 {
     None,
@@ -33,20 +43,21 @@ enum class TileType
 
 struct SurfaceData
 {
+    TileLayerId layer;
     cuboid dimensions;
-    rect mapRect;
+    maprect mapRect;
 };
 class GameWindow
 {
     int z0_x, z0_y;
-    std::vector<SurfaceData> wallSurfaces, groundSurfaces;
-    int getZLevelAtPoint(int mapX, int mapY);
-    void traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    void traceSideWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    void traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    std::vector<SurfaceData> surfaces;
+    int getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
+    bool getNextSideGroundTile(mappoint& mt, unsigned int mapSizeX, tmx::TileLayer& layer);
+    bool traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool traceSideWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool traceWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     tmx::TileLayer *getLayerByName(const char *name);
-    SurfaceData *createSurfaceFromMap(int mapX, int mapY, tmx::Vector2u &mapSize, const tmx::TileLayer &layer, int currentZ);
-    TileType getTileType(int mapX, int mapY, int mapSizeX, const tmx::TileLayer &layer);
+    TileType getTileType(const mappoint& mt, int mapSizeX, const tmx::TileLayer &layer);
     std::unordered_map<int, TileType> mapTileData;
     struct SDL_Window *window;
     struct SDL_Renderer *renderer;
@@ -61,7 +72,7 @@ class GameWindow
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
     bool readJsonTileData();
-    bool any_surface_intersects(const std::vector<SurfaceData> &surfaces, int mapX, int mapY);
+    bool any_surface_intersects(const std::vector<SurfaceData> &surfaces, const mappoint &mt);
 public:
     static GameWindow *Create();
     ~GameWindow();
@@ -69,11 +80,11 @@ public:
     struct SDL_Renderer *getRenderer() { return renderer;}
     size_t GetSizeX() { return size_x; }
     size_t GetSizeY() { return size_y; }
-    tripoint getTripointAtMapPoint(int mapX, int mapY);
+    tripoint getTripointAtMapPoint(const mappoint& mt);
 
     void handle_input(const union SDL_Event& event);
-    const std::vector<SurfaceData> get_wall_geometries() const { return wallSurfaces; }
-    const std::vector<SurfaceData> get_ground_geometries() const { return groundSurfaces; }
+    const std::vector<SurfaceData> get_wall_geometries() const;
+    const std::vector<SurfaceData> get_ground_geometries() const;
     int getHeight(int x, int y);
     void drawFrame();
 };
