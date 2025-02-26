@@ -99,14 +99,14 @@ tripoint GameWindow::getTripointAtMapPoint(int mapX, int mapY)
         if(wallSurface.mapRect.intersects(mapX, mapY)) {
             if(wallSurface.dimensions.z2 > (wallSurface.dimensions.z1 + 1)) {
                 return {
-                    (mapX - wallSurface.mapRect.x1) / 2.f,
-                    (float)mapY,
+                    wallSurface.dimensions.x1,
+                    wallSurface.dimensions.y1 + mapY - (mapX * 2.f),
                     wallSurface.dimensions.z1 + (mapY - wallSurface.mapRect.y1) / 2.f
                 };
             } else {
                 return {
-                    wallSurface.dimensions.x2 - wallSurface.dimensions.x1 + mapX, 
-                    wallSurface.dimensions.y2 - wallSurface.dimensions.y1 + mapY,
+                    wallSurface.dimensions.x1 + (mapX - wallSurface.mapRect.x1), 
+                    wallSurface.dimensions.y1 + (mapY - wallSurface.mapRect.y1),
                     wallSurface.dimensions.z2
                 };
             }
@@ -388,8 +388,8 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     }
     surface.dimensions.x1 = surface.mapRect.x1;
     surface.dimensions.x2 = surface.mapRect.x2 + 1;
-    surface.dimensions.y1 = surface.dimensions.y2 = mapY;
-    surface.dimensions.y2++;
+    tripoint tp = getTripointAtMapPoint(mapX, mapY);
+    surface.dimensions.y1 = surface.dimensions.y2 = tp.y;
     surface.mapRect.y1 = surface.mapRect.y2 = mapY;
     int tmpX1 = surface.mapRect.x1;
     int tmpX2 = surface.mapRect.x2;
@@ -417,6 +417,13 @@ void GameWindow::traceGroundTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tm
     if(surface.mapRect.y2 == mapY) {
         std::cout << "Bad map! Did not parse a single row of ground tiles!" << std::endl;
     }
+    tripoint pt;
+    mappoint mt;
+    mt.x = surface.mapRect.x2;
+    mt.y = surface.mapRect.y2;
+    getRealPosFromMapPos(mt, pt, surface.dimensions.z2);
+    surface.dimensions.x2 = pt.x;
+    surface.dimensions.y2 = pt.y;
 }
 
 void GameWindow::traceWallTiles(int mapX, int mapY, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)

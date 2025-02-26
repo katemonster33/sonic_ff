@@ -2,7 +2,7 @@
 #include <cmath>
 
 // helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
-const double c_x_ratio = sqrt(5);
+const double c_x_ratio = 2;//sqrt(5);
 
 struct Rect2
 {
