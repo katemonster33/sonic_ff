@@ -354,6 +354,7 @@ bool GameWindow::getNextSideGroundTile(mappoint& mt, unsigned int mapSizeX, tmx:
 
 bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
+    surface.layer = TileLayerId::Ground;
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, mapSize.x, layer);
     TileType expectedTileType = TileType::None;
@@ -553,7 +554,7 @@ const std::vector<SurfaceData> GameWindow::get_ground_geometries() const
 {
     std::vector<SurfaceData> output;
     for (auto& surface : surfaces) {
-        if (surface.layer == TileLayerId::ForegroundWall || surface.layer == TileLayerId::BackgroundWall) {
+        if (surface.layer == TileLayerId::Ground) {
             output.push_back(surface);
         }
     }

@@ -149,6 +149,9 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
     for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
         cType |= get_collision(wallGeometry.dimensions, c);
     }
+    for (const auto& ground : parentWindow->get_ground_geometries()) {
+        cType |= get_collision(ground.dimensions, c);
+    }
     return (CollisionType)cType;
 }
 
@@ -213,8 +216,8 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
         }
         realpos.x += xmove;
         float zmove = curMoveVelocity * percentZ * deltaQuotient;
-        if((colType & Front && zmove < 0.f) || 
-            (colType & Back && zmove > 0.f)) {
+        if((colType & Front && zmove > 0.f) || 
+            (colType & Back && zmove < 0.f)) {
                 zmove = 0.f;
         }
         realpos.z += zmove;
@@ -225,13 +228,13 @@ void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
             y_velocity = MAX_PLAYER_JUMP_VELOCITY;
         }
     }
-    //if(!(colType & Down)) {
-    //    y_velocity -= gravity_accel * deltaQuotient;
-    //    if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
-    //        y_velocity = MIN_PLAYER_Y_VELOCITY;
-    //    }
-    //    y -= y_velocity;
-    //}
+    if(!(colType & Down)) {
+        y_velocity -= gravity_accel * deltaQuotient;
+        if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
+            y_velocity = MIN_PLAYER_Y_VELOCITY;
+        }
+        realpos.y -= y_velocity;
+    }
     if (state == ActorState::Running) {
         spriteGroupIndex++;
         if (spriteGroupIndex == activeGroup->sprites.size()) {

@@ -24,22 +24,26 @@ CollisionType get_collision(const cuboid& cube, const cylinder& cyl)
     int cType = CollisionType::NoCollision;
     if ((cyl.y1 >= cube.p1.y && cyl.y1 <= cube.p2.y) ||
             (cyl.y2 >= cube.p1.y && cyl.y2 <= cube.p2.y)) {
-        if (cyl.x >= cube.p1.x && cyl.x <= cube.p2.x &&
-            cyl.z >= cube.p1.z && cyl.z <= cube.p2.z) {
-            if (cyl.x >= cube.p1.x) {
-                cType |= CollisionType::Left;
-            }
-            if (cyl.x <= cube.p2.x) {
-                cType |= CollisionType::Right;
-            }
-            if (cyl.z >= cube.p1.z) {
+        if (cyl.x >= cube.p1.x && cyl.x <= cube.p2.x) {
+            if (cyl.z >= cube.p1.z && cyl.z <= cube.p2.z) {
+                if (cyl.x >= cube.p1.x) {
+                    cType |= CollisionType::Left;
+                }
+                if (cyl.x <= cube.p2.x) {
+                    cType |= CollisionType::Right;
+                }
+                if (cyl.z >= cube.p1.z) {
+                    cType |= CollisionType::Front;
+                }
+                if (cyl.z <= cube.p2.z) {
+                    cType |= CollisionType::Back;
+                }
+            } else  if (cyl.z <= cube.p1.z && cyl.z + cyl.r >= cube.p1.z) {
                 cType |= CollisionType::Front;
-            }
-            if (cyl.z <= cube.p2.z) {
+            } else if (cyl.z >= cube.p2.z && cyl.z - cyl.r <= cube.p2.z) {
                 cType |= CollisionType::Back;
             }
-
-        }
+        } 
         else if (cyl.x < cube.p1.x && (cyl.x + cyl.r) >= cube.p1.x) {
             int xdist = cube.p1.x - cyl.x;
             if ((cyl.z + cyl.r) >= cube.p1.z && triangulate(xdist, cube.p1.z - cyl.z) < cyl.r) {
