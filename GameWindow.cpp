@@ -522,20 +522,18 @@ void GameWindow::drawFrame()
     for (Actor* actor : actors) {
         actor->draw(this, frameDeltaTime / 1000.f);
     }
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    for (const auto& geometry : get_wall_geometries()) {
-        SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
-    }
-    for (const auto& geometry : get_ground_geometries()) {
+    // SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    // for (const auto& geometry : get_wall_geometries()) {
+    //     SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
+    // }
+    // for (const auto& geometry : get_ground_geometries()) {
 
-        SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
-        
-        int actualX1 = int((geometry.dimensions.p1.x + geometry.dimensions.p1.z / c_x_ratio));
-        int actualY1 = int((geometry.dimensions.p1.z * 2 / c_x_ratio + geometry.dimensions.p1.y));
-        int actualX2 = int((geometry.dimensions.p2.x + geometry.dimensions.p2.z / c_x_ratio));
-        int actualY2 = int((geometry.dimensions.p2.z * 2 / c_x_ratio) + geometry.dimensions.p2.y);
-        SDL_RenderDrawLine(renderer, actualX1 * 16, actualY1 * 16, actualX2 * 16, actualY2 * 16);
-    }
+    //     SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
+    //     int actualX1, actualX2, actualY1, actualY2;
+    //     getPixelPosFromRealPos(geometry.dimensions.p1, actualX1, actualY1);
+    //     getPixelPosFromRealPos(geometry.dimensions.p2, actualX2, actualY2);
+    //     SDL_RenderDrawLine(renderer, actualX1, actualY1, actualX2, actualY2);
+    // }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
 }
