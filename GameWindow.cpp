@@ -249,6 +249,7 @@ int getFileLength(std::ifstream &file)
 
 bool GameWindow::readJsonTileData()
 {
+    std::string fileName = map.getTilesets()[0].getImagePath();
     std::ifstream jsonFile("assets/robotropolis-sheet.json", std::ios::in);
     assert(jsonFile.is_open());
 
@@ -261,45 +262,42 @@ bool GameWindow::readJsonTileData()
     delete[] fileData;
     assert(json != nullptr && json->child != nullptr);
 
-    cJSON *childJson = json->child;
-    while (childJson != nullptr) {
-        cJSON *tileData = childJson->child;
-        TileType tileType = TileType::None;
-        int id = atoi(childJson->string);
-        while(tileData != nullptr) {
-            char *str = tileData->valuestring;
-            if(strcmp(tileData->string, "collisionPreset") == 0) {
-                tileType = TileType::None;
-                if(strcmp(str, "wall") == 0) {
-                    tileType = TileType::Wall;
-                } else if(strcmp(str, "sideWall") == 0) {
-                    tileType = TileType::SideWall;
-                } else if(strcmp(str, "sideWallAngled1") == 0) {
-                    tileType = TileType::SideWallAngled1;
-                } else if(strcmp(str, "sideWallAngled2") == 0) {
-                    tileType = TileType::SideWallAngled2;
-                } else if(strcmp(str, "sideWallAngled3") == 0) {
-                    tileType = TileType::SideWallAngled3;
-                } else if(strcmp(str, "sideWallAngled4") == 0) {
-                    tileType = TileType::SideWallAngled4;
-                } else if(strcmp(str, "box") == 0) {
-                    tileType = TileType::Box;
-                } else if(strcmp(str, "ground") == 0) {
-                    tileType = TileType::Ground;
-                } else if(strcmp(str, "groundAngled1") == 0) {
-                    tileType = TileType::GroundAngled1;
-                } else if(strcmp(str, "groundAngled2") == 0) {
-                    tileType = TileType::GroundAngled2;
-                } else if(strcmp(str, "groundAngled3") == 0) {
-                    tileType = TileType::GroundAngled3;
-                } else if(strcmp(str, "groundAngled4") == 0) {
-                    tileType = TileType::GroundAngled4;
+    for (cJSON* childJson = json->child; childJson != nullptr; childJson = childJson->next) {
+        if (strcmp(childJson->string, "predefinedBasicTiles") == 0) {
+                
+            for (cJSON* predefinedTileObj = childJson->child; predefinedTileObj != nullptr; predefinedTileObj = predefinedTileObj->next) {
+                TileType typeToSet = TileType::None;
+                if (strcmp(predefinedTileObj->string, "wall") == 0) {
+                    typeToSet = TileType::Wall;
+                } else if (strcmp(predefinedTileObj->string, "sideWall") == 0) {
+                    typeToSet = TileType::SideWall;
+                } else if (strcmp(predefinedTileObj->string, "ground") == 0) {
+                    typeToSet = TileType::Ground;
+                } else if (strcmp(predefinedTileObj->string, "box") == 0) {
+                    typeToSet = TileType::Box;
+                }
+                for (cJSON* tileIds = predefinedTileObj->child; tileIds != nullptr; tileIds = tileIds->next) {
+                    mapTileData[tileIds->valueint] = typeToSet;
                 }
             }
-            tileData = tileData->next;
+        } else if (strcmp(childJson->string, "predefinedAngledTiles") == 0) {
+            for (cJSON* predefinedTileObj = childJson->child; predefinedTileObj != nullptr; predefinedTileObj = predefinedTileObj->next) {
+                std::vector<TileType> tileTypes;
+                if (strcmp(predefinedTileObj->string, "angledSideWall") == 0) {
+                    tileTypes = { TileType::SideWallAngled1, TileType::SideWallAngled2, TileType::SideWallAngled3, TileType::SideWallAngled4 };
+                } else if (strcmp(predefinedTileObj->string, "angledSideWall") == 0) {
+                    tileTypes = { TileType::GroundAngled1, TileType::GroundAngled2, TileType::GroundAngled3, TileType::GroundAngled4 };
+                }
+                for (cJSON* tileIdArrays = predefinedTileObj->child; tileIdArrays != nullptr; tileIdArrays = tileIdArrays->next) {
+                    auto tileType = tileTypes.begin();
+                    for (cJSON* tileId = tileIdArrays->child; tileId != nullptr && tileType != tileTypes.end(); tileId = tileId->next, tileType++) {
+                        mapTileData[tileId->valueint] = *tileType;
+                    }
+                }
+            }
+        } else if (strcmp(childJson->string, "customTiles") == 0) {
+
         }
-        mapTileData[id] = tileType;
-        childJson = childJson->next;
     }
     cJSON_Delete(json);
     return true;
