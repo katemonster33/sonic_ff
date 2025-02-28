@@ -52,12 +52,12 @@ class GameWindow
     int z0_x, z0_y;
     std::vector<SurfaceData> surfaces;
     int getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
-    bool getNextSideGroundTile(mappoint& mt, unsigned int mapSizeX, tmx::TileLayer& layer);
-    bool traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    bool traceSideWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    bool traceWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer);
+    bool traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     tmx::TileLayer *getLayerByName(const char *name);
-    TileType getTileType(const mappoint& mt, int mapSizeX, const tmx::TileLayer &layer);
+    TileType getTileType(const mappoint& mt, const tmx::TileLayer &layer);
     std::unordered_map<int, TileType> mapTileData;
     struct SDL_Window *window;
     struct SDL_Renderer *renderer;
@@ -69,6 +69,7 @@ class GameWindow
     std::vector<class Actor*> actors;
     uint64_t curTime;
     uint64_t lastFrameTime;
+    const tmx::Vector2u& mapSize;
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
     bool readJsonTileData();
@@ -85,6 +86,5 @@ public:
     void handle_input(const union SDL_Event& event);
     const std::vector<SurfaceData> get_wall_geometries() const;
     const std::vector<SurfaceData> get_ground_geometries() const;
-    int getHeight(int x, int y);
     void drawFrame();
 };

@@ -129,7 +129,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     size_y(sizey),
     map(map),
     curTime(0),
-    lastFrameTime(0)
+    lastFrameTime(0),
+    mapSize(map.getTileCount())
 {
     this->window = window;
     this->renderer = renderer;
@@ -156,22 +157,22 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     }
     readJsonTileData();
     auto bgLayer = getLayerByName("Background");
-    auto mapSize = map.getTileCount();
+    const auto& mapSize = map.getTileCount();
     std::vector<SurfaceData> miscSurfaces;
     if(bgLayer != nullptr) {
         int currentZ = 0;
         mappoint mt{ 0, 0 };
         for (; mt.x < mapSize.x; ++mt.x) {
             for (mt.y = 0; mt.y < mapSize.y; ++mt.y) {
-                TileType bgTileType = getTileType(mt, mapSize.x, *bgLayer);
+                TileType bgTileType = getTileType(mt, *bgLayer);
                 if(bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) {
                     SurfaceData wallSurface;
                     wallSurface.layer = TileLayerId::BackgroundWall;
                     bool traceSuccess = false;
                     if(bgTileType == TileType::Wall) {
-                        traceSuccess = traceWallTiles(mt, mapSize, *bgLayer, currentZ, wallSurface);
+                        traceSuccess = traceWallTiles(mt, *bgLayer, currentZ, wallSurface);
                     } else {
-                        traceSuccess = traceSideWallTiles(mt, mapSize, *bgLayer, currentZ, wallSurface);
+                        traceSuccess = traceSideWallTiles(mt, *bgLayer, currentZ, wallSurface);
                         currentZ = wallSurface.dimensions.p2.z;
                     }
                     if (traceSuccess) {
@@ -188,7 +189,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         mappoint mt{ 0, 0 };
         for(; mt.x < mapSize.x; mt.x++) {
             for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
-                TileType bgTileType = getTileType(mt, mapSize.x, *fgWallLayer);
+                TileType bgTileType = getTileType(mt, *fgWallLayer);
                 if(bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) {
                     SurfaceData wallSurface;
                     wallSurface.layer = TileLayerId::ForegroundWall;
@@ -196,10 +197,10 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
                     int zOffset = 0;
                     if(bgTileType == TileType::Wall) {
                         zOffset = getZLevelAtPoint({ mt.x, mt.y }, TileLayerId::ForegroundWall);
-                        parseSuccess = traceWallTiles(mt, mapSize, *fgWallLayer, zOffset, wallSurface);
+                        parseSuccess = traceWallTiles(mt, *fgWallLayer, zOffset, wallSurface);
                     } else {
                         zOffset = getZLevelAtPoint({ mt.x - 1, mt.y }, TileLayerId::BackgroundWall);
-                        parseSuccess = traceSideWallTiles(mt, mapSize, *fgWallLayer, zOffset, wallSurface);
+                        parseSuccess = traceSideWallTiles(mt, *fgWallLayer, zOffset, wallSurface);
                     }
                     if (parseSuccess) {
                         surfaces.push_back(wallSurface);
@@ -215,12 +216,12 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         mappoint mt{ 0, 0 };
         for(; mt.x < mapSize.x; mt.x++) {
             for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
-                TileType fgTileType = getTileType(mt, mapSize.x, *fgLayer);
+                TileType fgTileType = getTileType(mt, *fgLayer);
                 if(isGroundTile(fgTileType) && !any_surface_intersects(get_ground_geometries(), mt)) {
                     int currentZ = getZLevelAtPoint(mt);
                     SurfaceData fgSurface;
                     fgSurface.layer = TileLayerId::Ground;
-                    traceGroundTiles(mt, mapSize, *fgLayer, currentZ, fgSurface);
+                    traceGroundTiles(mt, *fgLayer, currentZ, fgSurface);
                     surfaces.push_back(fgSurface);
                 }
             }
@@ -304,9 +305,9 @@ bool GameWindow::readJsonTileData()
     return true;
 }
 
-TileType GameWindow::getTileType(const mappoint &mt, int mapSizeX, const tmx::TileLayer &layer)
+TileType GameWindow::getTileType(const mappoint &mt, const tmx::TileLayer &layer)
 {
-    int tileId = layer.getTiles()[mapSizeX * mt.y + mt.x].ID;
+    int tileId = layer.getTiles()[mapSize.x * mt.y + mt.x].ID;
     if(tileId == 0) {
         return TileType::None;
     }
@@ -337,9 +338,9 @@ tmx::TileLayer *GameWindow::getLayerByName(const char *name)
     return nullptr;
 }
 
-bool GameWindow::getNextSideGroundTile(mappoint& mt, unsigned int mapSizeX, tmx::TileLayer& layer)
+bool GameWindow::getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer)
 {
-    TileType tileTmp = getTileType(mt, mapSizeX, layer);
+    TileType tileTmp = getTileType(mt, layer);
     if (tileTmp == TileType::GroundAngled2 || tileTmp == TileType::GroundAngled4) {
         mt.x++;
         mt.y++;
@@ -352,11 +353,11 @@ bool GameWindow::getNextSideGroundTile(mappoint& mt, unsigned int mapSizeX, tmx:
     }
 }
 
-bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     surface.layer = TileLayerId::Ground;
     TileType lastTileType = TileType::None;
-    TileType curTileType = getTileType(mt, mapSize.x, layer);
+    TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::GroundAngled1 && curTileType != TileType::GroundAngled2) {
         std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry! [" << mt.x << "," << mt.y << "]" << std::endl;
@@ -364,15 +365,15 @@ bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tm
     }
     surface.mapRect.p1 = surface.mapRect.p2 = mt;
     
-    while(surface.mapRect.p2.x < mapSize.x && isGroundTile(getTileType(surface.mapRect.p2, mapSize.x, layer))) {
+    while(surface.mapRect.p2.x < mapSize.x && isGroundTile(getTileType(surface.mapRect.p2, layer))) {
         surface.mapRect.p2.x++;
     }
     mappoint leftTile = mt;
     mappoint rightTile{ surface.mapRect.p2.x - 1, surface.mapRect.p2.y };
     while (rightTile.y < mapSize.y &&
         rightTile.x < mapSize.x &&
-        getNextSideGroundTile(leftTile, mapSize.x, layer) &&
-        getNextSideGroundTile(rightTile, mapSize.x, layer));
+        getNextSideGroundTile(leftTile, layer) &&
+        getNextSideGroundTile(rightTile, layer));
     surface.mapRect.p2 = rightTile;
     if(surface.mapRect.p2.y == mt.y) {
         std::cout << "Bad map! Did not parse a single row of ground tiles! [" << surface.mapRect.p2.x << "," << surface.mapRect.p2.y << "]" << std::endl;
@@ -383,23 +384,23 @@ bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::Vector2u& mapSize, tm
     return true;
 }
 
-bool GameWindow::traceWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
-    TileType curTileType = getTileType(mt, mapSize.x, layer);
+    TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::Wall && curTileType != TileType::SideWallAngled1) {
         std::cout << "Bad map! Wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
         return false;
     }
     surface.mapRect.p1 = surface.mapRect.p2 = mt;
-    while(surface.mapRect.p2.y < mapSize.y && getTileType(surface.mapRect.p2, mapSize.x, layer) == TileType::Wall) {
+    while(surface.mapRect.p2.y < mapSize.y && getTileType(surface.mapRect.p2, layer) == TileType::Wall) {
         surface.mapRect.p2.y++;
     }
     surface.mapRect.p2.x++;
     while(surface.mapRect.p2.x < mapSize.x && 
-        getTileType({ surface.mapRect.p2.x, surface.mapRect.p1.y }, mapSize.x, layer) == TileType::Wall &&
-        getTileType({ surface.mapRect.p2.x, surface.mapRect.p2.y - 1 }, mapSize.x, layer) == TileType::Wall) {
+        getTileType({ surface.mapRect.p2.x, surface.mapRect.p1.y }, layer) == TileType::Wall &&
+        getTileType({ surface.mapRect.p2.x, surface.mapRect.p2.y - 1 }, layer) == TileType::Wall) {
 
         surface.mapRect.p2.x++;
     }
@@ -414,17 +415,17 @@ bool GameWindow::traceWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx:
 /// @param layer Current layer being considered
 /// @param currentZ derived Z-point in 3D space
 /// @param surface Surface data to be written, containing the 3D collision data from the detected surface
-bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
-    TileType curTileType = getTileType(mt, mapSize.x, layer);
+    TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2) {
         std::cout << "Bad map! Side-wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
         return false;
     }
     surface.mapRect.p1 = surface.mapRect.p2 = mt;
-    while(surface.mapRect.p2.y < mapSize.y && isSideWallTile(getTileType(surface.mapRect.p2, mapSize.x, layer))) {
+    while(surface.mapRect.p2.y < mapSize.y && isSideWallTile(getTileType(surface.mapRect.p2, layer))) {
         surface.mapRect.p2.y++;
     }
     surface.mapRect.p2.y--;
@@ -432,7 +433,7 @@ bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, 
     TileType tileTmp = TileType::None, lastTile = TileType::None;
     while(surface.mapRect.p2.x < layer.getSize().x && 
         surface.mapRect.p2.y < layer.getSize().y) {
-        tileTmp = getTileType({ surface.mapRect.p2.x, surface.mapRect.p2.y }, mapSize.x, layer);
+        tileTmp = getTileType({ surface.mapRect.p2.x, surface.mapRect.p2.y }, layer);
         if (tileTmp == TileType::SideWallAngled1 || tileTmp == TileType::SideWallAngled4) {
             surface.mapRect.p2.x++;
             surface.mapRect.p2.y++;
@@ -450,15 +451,6 @@ bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::Vector2u& mapSize, 
     getRealPosFromMapPos(surface.mapRect.p1, surface.dimensions.p1, currentZ);
     getRealPosFromMapPos(surface.mapRect.p2, surface.dimensions.p2, currentZ + (surface.mapRect.p2.y - y2_start) + 1);
     return true;
-}
-
-int GameWindow::getHeight(int x, int y)
-{
-    return 1;
-    //size_t tile_x = x / 16;
-    //size_t tile_y = y / 16;
-    //size_t idx = (x / 16) * map.getTileSize().x + (y / 16);
-    //map.getTilesets()[0].getTiles()[idx];
 }
 
 GameWindow *GameWindow::Create()
