@@ -285,7 +285,7 @@ bool GameWindow::readJsonTileData()
                 std::vector<TileType> tileTypes;
                 if (strcmp(predefinedTileObj->string, "angledSideWall") == 0) {
                     tileTypes = { TileType::SideWallAngled1, TileType::SideWallAngled2, TileType::SideWallAngled3, TileType::SideWallAngled4 };
-                } else if (strcmp(predefinedTileObj->string, "angledSideWall") == 0) {
+                } else if (strcmp(predefinedTileObj->string, "angledGround") == 0) {
                     tileTypes = { TileType::GroundAngled1, TileType::GroundAngled2, TileType::GroundAngled3, TileType::GroundAngled4 };
                 }
                 for (cJSON* tileIdArrays = predefinedTileObj->child; tileIdArrays != nullptr; tileIdArrays = tileIdArrays->next) {
@@ -408,8 +408,7 @@ bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int c
 }
 
 /// @brief Trace a 3D ground surface from the 2D map by looking at the geometry of the tiles as defined in JSON
-/// @param mapX X-coordinate on the 2D map
-/// @param mapY Y-coordinate on the 2D map
+/// @param mt coordinate on the 2D map
 /// @param layer Current layer being considered
 /// @param currentZ derived Z-point in 3D space
 /// @param surface Surface data to be written, containing the 3D collision data from the detected surface
