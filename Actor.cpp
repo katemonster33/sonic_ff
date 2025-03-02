@@ -1,4 +1,5 @@
 #include "Actor.h"
+#include "SpriteSheet.h"
 #include "Geometry.h"
 
 Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :

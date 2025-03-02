@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SpriteSheet.h"
 #include "ActorState.h"
 #include "Texture.h"
 #include "GameWindow.h"
@@ -31,8 +30,8 @@ class Actor
     int intentMoveKeys;
     Texture* texture;
     size_t spriteGroupIndex;
-	SpriteConfig *spriteConfig;
-    const SpriteGroup* activeGroup;
+	struct SpriteConfig *spriteConfig;
+    const struct SpriteGroup* activeGroup;
 	bool visible;
 public:
 	Actor( SpriteConfig *spriteConfig, Texture* texture, const mappoint &mt);
