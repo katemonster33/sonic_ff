@@ -4,6 +4,8 @@
 #include "Texture.h"
 #include "GameWindow.h"
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
+
 #include "Geometry.h"
 
 const float MAX_PLAYER_X_VELOCITY = 5.0f;
@@ -12,6 +14,12 @@ const float MAX_PLAYER_JUMP_VELOCITY = 5.f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
 const float PLAYER_RUN_ACCEL = 5.0f; // 5 m/s^2
 
+struct MoveVector
+{
+    float angle;
+    float velocity;
+};
+
 
 class Actor
 {
@@ -19,10 +27,8 @@ class Actor
     Hitbox collisionGeometry;
     mappoint mappos;
     tripoint realpos;
-    float intentMoveAngle;
-    float intentMovePercent;
-    float curMoveAngle;
-    float curMoveVelocity;
+    MoveVector intentMove;
+    MoveVector curMove;
     float y_velocity;
     ActorState lastFrameState;
 	ActorState state;
@@ -33,6 +39,14 @@ class Actor
 	struct SpriteConfig *spriteConfig;
     const struct SpriteGroup* activeGroup;
 	bool visible;
+
+    float getMoveAngleFromMoveKey(int mKeysDown);
+    bool isMovementKey(SDL_Keycode keyCode);
+    int getMovementTypeFromKey(SDL_Keycode keyCode);
+    int getIntentFromKey(SDL_Keycode keyCode);
+
+    void handleMovement(bool isRunning, float deltaTime, const MoveVector &intent, MoveVector &current);
+
 public:
 	Actor( SpriteConfig *spriteConfig, Texture* texture, const mappoint &mt);
     ~Actor();
