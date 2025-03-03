@@ -139,3 +139,39 @@ void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, int z)
     realpoint.y = mappos.y - float(z);
     realpoint.z = z;
 }
+
+float triangle::degToRads(float degs)
+{
+    return degs * M_PI / 180;
+}
+
+float triangle::getCSide(float aSide, float bSide, float cAngleRads)
+{
+    return sqrt(bSide * bSide + aSide * aSide - (2 * bSide * aSide * cos(cAngleRads)));
+}
+
+float triangle::getAAngle(float aSide, float bSide, float cSide)
+{
+    return acos((cSide * cSide + bSide * bSide - aSide * aSide) / (2 * cSide * bSide));
+}
+
+void modifyVelocityFromTurn(float &curVelocity, float &curAngle, float intentAngle, float intentVelocity, float deltaVelocity)
+{
+    float deltaAngle = intentAngle - curAngle;
+    if(deltaAngle > 180) {
+        deltaAngle = intentAngle - (curAngle + 360);
+    }
+    float cSide = triangle::getCSide(curVelocity, intentVelocity, abs(triangle::degToRads(deltaAngle)));
+    float aAngle = triangle::getAAngle(curVelocity, intentVelocity, cSide);
+    float tmpCurVelocity = triangle::getCSide(curVelocity, cSide, aAngle);
+    float newDeltaAngle = triangle::getAAngle(curVelocity, deltaVelocity, tmpCurVelocity);
+    if(deltaAngle < 0) {
+        curAngle -= newDeltaAngle;
+    } else {
+        curAngle += newDeltaAngle;
+    }
+    if(newDeltaAngle > abs(deltaAngle) {
+        curAngle = intentAngle;
+    })
+    curVelocity = tmpCurVelocity;
+}

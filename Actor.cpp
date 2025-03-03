@@ -178,15 +178,8 @@ void Actor::handleMovement(bool isRunning, float deltaTime, const MoveVector &in
             if (intent.angle == abs(current.angle - 180)) {
                 current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
             } else {
-                if (fmod(intent.angle + 180, 360) < current.angle) {
-                    current.angle -= std::min(3.f, current.angle - intent.angle);
-                }
-                else {
-                    current.angle += std::min(3.f, intent.angle - current.angle);
-                }
-                current.velocity -= (PLAYER_RUN_ACCEL * deltaTime) / 2;
+                modifyVelocityFromTurn(current.velocity, current.angle, )
             }
-            
         } else {
             current.angle = intent.angle;
             current.velocity += (PLAYER_RUN_ACCEL * deltaTime);

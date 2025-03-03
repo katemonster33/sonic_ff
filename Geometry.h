@@ -70,9 +70,18 @@ enum CollisionType
     Back = 32
 };
 
+namespace triangle
+{
+    float degToRads(float degs);
+    float getCSide(float aSide, float bSide, float cAngleRads);
+    float getAAngle(float aSide, float bSide, float cSide);
+}
+
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl);
 CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2);
 
 void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY);
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);
 void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, int z);
+
+void modifyVelocityFromTurn(float &curVelocity, float &curAngle, float intentAngle, float intentVelocity, float deltaVelocity);

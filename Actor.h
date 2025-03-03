@@ -44,6 +44,7 @@ class Actor
     bool isMovementKey(SDL_Keycode keyCode);
     int getMovementTypeFromKey(SDL_Keycode keyCode);
     int getIntentFromKey(SDL_Keycode keyCode);
+    void handleTurning(MoveVector &intent, MoveVector &current);
 
     void handleMovement(bool isRunning, float deltaTime, const MoveVector &intent, MoveVector &current);
 
