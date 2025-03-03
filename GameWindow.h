@@ -6,7 +6,7 @@
 #include <tmxlite/Types.hpp>
 #include "Geometry.h"
 
-const float gravity_accel = 9.8f; // 9.8 m/s^2
+const float gravity_accel = 4.f;//9.8f; // 9.8 m/s^2
 
 namespace tmx
 {
@@ -49,7 +49,7 @@ struct SurfaceData
 };
 class GameWindow
 {
-    int z0_x, z0_y;
+    mappoint z0pos;
     std::vector<SurfaceData> surfaces;
     int getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
     bool getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer);

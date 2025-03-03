@@ -12,6 +12,7 @@ struct Rect2
     int h;
 };
 
+
 struct Hitbox
 {
     float x;
@@ -79,6 +80,9 @@ namespace triangle
 
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl);
 CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2);
+
+bool line_intersects(float l1x1, float l1x2, float l2x1, float l2x2);
+bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, float rw, float rh);
 
 void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY);
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);

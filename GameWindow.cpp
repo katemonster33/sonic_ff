@@ -130,11 +130,11 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     map(map),
     curTime(0),
     lastFrameTime(0),
-    mapSize(map.getTileCount())
+    z0pos({0, 0}),
+    mapSize(map.getTileCount()),
+    window(window),
+    renderer(renderer)
 {
-    this->window = window;
-    this->renderer = renderer;
-
     actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), { 13, 11 }));
 
     //load the textures as they're shared between layers
@@ -227,8 +227,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
-    z0_x = surfaces[0].mapRect.p1.x;
-    z0_y = surfaces[0].mapRect.p1.y;
+    z0pos = { surfaces[0].mapRect.p1.x, surfaces[0].mapRect.p1.y };
 }
 
 GameWindow::~GameWindow()
