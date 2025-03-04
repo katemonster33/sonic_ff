@@ -60,12 +60,12 @@ CollisionType get_collision(const cuboid& c1, const cuboid& c2)
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl)
 {
     if (line_intersects(cube.p1.y, cube.p2.y, cyl.y1, cyl.y2) && 
-        circle_intersects_rect(cyl.x, cyl.z, cyl.r, cube.p1.x, cube.p1.z, cube.p2.x - cube.p1.x + 0.05, cube.p2.z - cube.p1.z + 0.05)) {
+        circle_intersects_rect(cyl.x, cyl.z, cyl.r, (cube.p1.x + cube.p2.x) / 2, (cube.p1.z + cube.p2.z) / 2, cube.p2.x - cube.p1.x + 0.05, cube.p2.z - cube.p1.z + 0.05)) {
         float y_mid = (cyl.y2 + cyl.y1) / 2.f;
         if (y_mid < cube.p1.y) {
-            return CollisionType::Up;
-        } else if (y_mid > cube.p1.y) {
             return CollisionType::Down;
+        } else if (y_mid > cube.p1.y) {
+            return CollisionType::Up;
         } else {
             int colType = CollisionType::NoCollision;
             if (cyl.x < cube.p1.x) {
@@ -92,11 +92,13 @@ bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, 
     float circleDistX = abs(cx - rx1);
     float circleDistY = abs(cy - ry1);
 
-    if (circleDistX > (rw / 2 + cr)) { return false; }
-    if (circleDistY > (rh / 2 + cr)) { return false; }
+    if (circleDistX > (rw / 2 + cr) || circleDistY > (rh / 2 + cr)) { 
+        return false; 
+    }
 
-    if (circleDistX <= (rw / 2)) { return true; }
-    if (circleDistY <= (rh / 2)) { return true; }
+    if (circleDistX <= (rw / 2) || circleDistY <= (rh / 2)) { 
+        return true; 
+    }
 
     float cornerDistSq = pow(circleDistX - rw / 2, 2.f) +
         pow(circleDistY - rh / 2, 2.f);
