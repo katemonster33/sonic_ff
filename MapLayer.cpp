@@ -94,21 +94,53 @@ bool MapLayer::create(const tmx::Map& map, std::uint32_t layerIndex, const std::
                     const float tilePosX = static_cast<float>(x) * mapTileSize.x;
                     const float tilePosY = (static_cast<float>(y) * mapTileSize.y);
 
-
-                    //push back to vert array
-                    SDL_Vertex vert = { { tilePosX, tilePosY }, vertColour, {u, v} };
-                    verts.emplace_back(vert);
-                    vert = { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u + uNorm, v} };
-                    verts.emplace_back(vert);
-                    vert = { { tilePosX, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} };
-                    verts.emplace_back(vert);
-
-                    vert = { { tilePosX, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} };
-                    verts.emplace_back(vert);
-                    vert = { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u + uNorm, v} };
-                    verts.emplace_back(vert);
-                    vert = { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y }, vertColour, {u + uNorm, v + vNorm} };
-                    verts.emplace_back(vert);
+                    // push back to vert array
+                    if(tileIDs[idx].flipFlags == tmx::TileLayer::FlipFlag::Vertical) {
+                        verts.insert(verts.end(), {
+                            { { tilePosX, tilePosY + mapTileSize.y }, vertColour, {u, v} }, 
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y }, vertColour, {u + uNorm, v} },
+                            { { tilePosX, tilePosY }, vertColour, {u, v + vNorm} },
+                            { { tilePosX, tilePosY}, vertColour, {u, v + vNorm} },
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y }, vertColour, {u + uNorm, v} },
+                            { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u + uNorm, v + vNorm} }
+                        });
+                    } else if(tileIDs[idx].flipFlags == tmx::TileLayer::FlipFlag::Horizontal) {
+                        verts.insert(verts.end(), {
+                            { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u, v} }, 
+                            { { tilePosX, tilePosY }, vertColour, {u + uNorm, v} },
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} },
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} },
+                            { { tilePosX, tilePosY }, vertColour, {u + uNorm, v} },
+                            { { tilePosX, tilePosY + mapTileSize.y }, vertColour, {u + uNorm, v + vNorm} }
+                        });
+                    // } else if(tileIDs[idx].flipFlags == tmx::TileLayer::FlipFlag::Diagonal) {
+                        // verts.insert(verts.end(), {
+                        //     { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y  }, vertColour, {u, v} }, 
+                        //     { { tilePosX, tilePosY + mapTileSize.y  }, vertColour, {u + uNorm, v} },
+                        //     { { tilePosX + mapTileSize.x, tilePosY}, vertColour, {u, v + vNorm} },
+                        //     { { tilePosX + mapTileSize.x, tilePosY}, vertColour, {u, v + vNorm} },
+                        //     { { tilePosX, tilePosY + mapTileSize.y  }, vertColour, {u + uNorm, v} },
+                        //     { { tilePosX, tilePosY }, vertColour, {u + uNorm, v + vNorm} }
+                        // });
+                    } else if(tileIDs[idx].flipFlags == (tmx::TileLayer::FlipFlag::Vertical | tmx::TileLayer::FlipFlag::Horizontal)) {
+                        verts.insert(verts.end(), {
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y  }, vertColour, {u, v} }, 
+                            { { tilePosX, tilePosY + mapTileSize.y  }, vertColour, {u + uNorm, v} },
+                            { { tilePosX + mapTileSize.x, tilePosY}, vertColour, {u, v + vNorm} },
+                            { { tilePosX + mapTileSize.x, tilePosY}, vertColour, {u, v + vNorm} },
+                            { { tilePosX, tilePosY + mapTileSize.y  }, vertColour, {u + uNorm, v} },
+                            { { tilePosX, tilePosY }, vertColour, {u + uNorm, v + vNorm} }
+                        });
+                    } else {
+                        verts.insert(verts.end(), {
+                            { { tilePosX, tilePosY }, vertColour, {u, v} }, 
+                            { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u + uNorm, v} },
+                            { { tilePosX, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} },
+                            { { tilePosX, tilePosY + mapTileSize.y}, vertColour, {u, v + vNorm} },
+                            { { tilePosX + mapTileSize.x, tilePosY }, vertColour, {u + uNorm, v} },
+                            { { tilePosX + mapTileSize.x, tilePosY + mapTileSize.y }, vertColour, {u + uNorm, v + vNorm} }
+                        });
+                    }
                 }
             }
         }
