@@ -64,14 +64,14 @@ CollisionType get_collision(const cuboid& cube, const cylinder& cyl)
         float y_mid = (cyl.y2 + cyl.y1) / 2.f;
         if (y_mid < cube.p1.y) {
             return CollisionType::Down;
-        } else if (y_mid > cube.p1.y) {
+        } else if (y_mid > cube.p2.y) {
             return CollisionType::Up;
         } else {
             int colType = CollisionType::NoCollision;
             if (cyl.x < cube.p1.x) {
-                colType |= CollisionType::Left;
-            } else if (cyl.x > cube.p2.x) {
                 colType |= CollisionType::Right;
+            } else if (cyl.x > cube.p2.x) {
+                colType |= CollisionType::Left;
             }
             if (cyl.z < cube.p1.z) {
                 colType |= CollisionType::Front;
