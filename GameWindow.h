@@ -53,6 +53,7 @@ class GameWindow
     std::vector<SurfaceData> surfaces;
     int getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
     bool getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer);
+    bool traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     bool traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     bool traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
     bool traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
@@ -86,5 +87,6 @@ public:
     void handle_input(const union SDL_Event& event);
     const std::vector<SurfaceData> get_wall_geometries() const;
     const std::vector<SurfaceData> get_ground_geometries() const;
+    const std::vector<SurfaceData> get_obstacle_geometries() const;
     void drawFrame();
 };

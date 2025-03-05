@@ -158,14 +158,17 @@ CollisionType Actor::check_collision(GameWindow* parentWindow)
     int cType = CollisionType::NoCollision;
     cylinder c;
     c.x = realpos.x + collisionGeometry.x;
-    c.y1 = realpos.y + collisionGeometry.y - 1;
+    c.y1 = realpos.y + collisionGeometry.y - 1.f;
     c.y2 = realpos.y + collisionGeometry.y;
     c.r = 0.5f;
-    c.z = realpos.z;
+    c.z = realpos.z + 2.f;
     for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
         cType |= get_collision(wallGeometry.dimensions, c);
     }
     for (const auto& ground : parentWindow->get_ground_geometries()) {
+        cType |= get_collision(ground.dimensions, c);
+    }
+    for (const auto& ground : parentWindow->get_obstacle_geometries()) {
         cType |= get_collision(ground.dimensions, c);
     }
     return (CollisionType)cType;
@@ -175,8 +178,8 @@ void Actor::handleMovement(bool isRunning, float deltaTime, const MoveVector &in
 {
     if(isRunning) {
         if(intent.angle != current.angle && current.velocity != 0.f) {
-            if (intent.angle == abs(current.angle - 180)) {
-                current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
+            if (intent.angle == abs(current.angle - 180) || intent.angle == abs(current.angle + 180)) {
+                current.velocity -= (PLAYER_RUN_ACCEL * deltaTime * 2);
             } else {
                 modifyVelocityFromTurn(current.velocity, current.angle, intent.angle, intent.velocity, PLAYER_RUN_ACCEL * deltaTime);
             }

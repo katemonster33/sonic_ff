@@ -227,6 +227,22 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             }
         }
     }
+    auto collLayer = getLayerByName("collidables");
+    if(collLayer != nullptr) {
+        mappoint mt{ 0, 0 };
+        for(; mt.x < mapSize.x; mt.x++) {
+            for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
+                TileType fgTileType = getTileType(mt, *collLayer);
+                if(fgTileType == TileType::Box && !any_surface_intersects(get_obstacle_geometries(), mt)) {
+                    int currentZ = getZLevelAtPoint(mt);
+                    SurfaceData fgSurface;
+                    fgSurface.layer = TileLayerId::Obstacle;
+                    traceBoxTiles(mt, *collLayer, currentZ, fgSurface);
+                    surfaces.push_back(fgSurface);
+                }
+            }
+        }
+    }
     z0pos = { surfaces[0].mapRect.p1.x, surfaces[0].mapRect.p1.y };
 }
 
@@ -348,6 +364,36 @@ bool GameWindow::getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer)
     } else {
         return false;
     }
+}
+
+bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+{
+    surface.layer = TileLayerId::Ground;
+    TileType lastTileType = TileType::None;
+    TileType curTileType = getTileType(mt, layer);
+    TileType expectedTileType = TileType::None;
+    if(curTileType != TileType::Box) {
+        std::cout << "Bad map! Ground tiles organized in a way that tracer cannot trace the geometry! [" << mt.x << "," << mt.y << "]" << std::endl;
+        return false;
+    }
+    surface.mapRect.p1 = surface.mapRect.p2 = mt;
+    
+    while(surface.mapRect.p2.x < mapSize.x && getTileType(surface.mapRect.p2, layer) == TileType::Box) {
+        surface.mapRect.p2.x++;
+    }
+    surface.mapRect.p2.y++;
+    while (surface.mapRect.p2.y < mapSize.y &&
+        surface.mapRect.p2.x < mapSize.x &&
+    getTileType({surface.mapRect.p2.x - 1, surface.mapRect.p2.y - 1}, layer) == TileType::Box){
+        surface.mapRect.p2.y++;
+    }
+    if(surface.mapRect.p2.y == mt.y) {
+        std::cout << "Bad map! Did not parse a single row of box tiles! [" << surface.mapRect.p2.x << "," << surface.mapRect.p2.y << "]" << std::endl;
+        return false;
+    }
+    getRealPosFromMapPos(surface.mapRect.p1, surface.dimensions.p1, currentZ);
+    getRealPosFromMapPos(surface.mapRect.p2, surface.dimensions.p2, currentZ + 1);
+    return true;
 }
 
 bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
@@ -543,6 +589,17 @@ const std::vector<SurfaceData> GameWindow::get_ground_geometries() const
     std::vector<SurfaceData> output;
     for (auto& surface : surfaces) {
         if (surface.layer == TileLayerId::Ground) {
+            output.push_back(surface);
+        }
+    }
+    return output;
+}
+
+const std::vector<SurfaceData> GameWindow::get_obstacle_geometries() const
+{
+    std::vector<SurfaceData> output;
+    for (auto& surface : surfaces) {
+        if (surface.layer == TileLayerId::Obstacle) {
             output.push_back(surface);
         }
     }
