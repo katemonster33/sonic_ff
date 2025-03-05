@@ -47,16 +47,28 @@ struct SurfaceData
     cuboid dimensions;
     maprect mapRect;
 };
+
+struct CollisionData
+{
+    struct CollisionItem
+    {
+        int direction = 0;
+        SurfaceData surface;
+    };
+    int directions = 0;
+    std::vector<CollisionItem> collisions;
+};
+
 class GameWindow
 {
     mappoint z0pos;
     std::vector<SurfaceData> surfaces;
-    int getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
+    float getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);
     bool getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer);
-    bool traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    bool traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    bool traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
-    bool traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface);
+    bool traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface);
+    bool traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface);
+    bool traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface);
+    bool traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface);
     tmx::TileLayer *getLayerByName(const char *name);
     TileType getTileType(const mappoint& mt, const tmx::TileLayer &layer);
     std::unordered_map<int, TileType> mapTileData;
@@ -67,6 +79,7 @@ class GameWindow
     tmx::Map& map;
     size_t size_x;
     size_t size_y;
+    class PlayerActor* playerActor;
     std::vector<class Actor*> actors;
     uint64_t curTime;
     uint64_t lastFrameTime;
@@ -74,7 +87,7 @@ class GameWindow
 
     GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey);
     bool readJsonTileData();
-    bool any_surface_intersects(const std::vector<SurfaceData> &surfaces, const mappoint &mt);
+    bool any_surface_intersects(TileLayerId surfaceType, const mappoint &mt);
 public:
     static GameWindow *Create();
     ~GameWindow();
@@ -85,8 +98,12 @@ public:
     tripoint getTripointAtMapPoint(const mappoint& mt);
 
     void handle_input(const union SDL_Event& event);
+
+    const CollisionData check_collision(const cylinder& collisionCyl);
+
     const std::vector<SurfaceData> get_wall_geometries() const;
     const std::vector<SurfaceData> get_ground_geometries() const;
     const std::vector<SurfaceData> get_obstacle_geometries() const;
+    const std::vector<SurfaceData> get_geometries() const { return surfaces; }
     void drawFrame();
 };

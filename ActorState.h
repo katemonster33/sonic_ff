@@ -6,6 +6,7 @@ enum class ActorState
     Default,
     Idle,
     Running,
+    Jumping,
     Attacking,
     LookingUp,
     Crouching,

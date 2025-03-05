@@ -1,12 +1,5 @@
 #include "Geometry.h"
 
-//#ifdef OS_WINDOWS
-#define _USE_MATH_DEFINES
-#include <math.h>
-//#endif
-#include <cmath>
-
-
 bool maprect::intersects(const maprect &other) const
 {
     return ((p1.x >= other.p1.x && p1.x <= other.p2.x) || (p2.x >= other.p1.x && p2.x <= other.p2.x)) && 
@@ -60,11 +53,11 @@ CollisionType get_collision(const cuboid& c1, const cuboid& c2)
 CollisionType get_collision(const cuboid& cube, const cylinder& cyl)
 {
     if (line_intersects(cube.p1.y, cube.p2.y, cyl.y1, cyl.y2) && 
-        circle_intersects_rect(cyl.x, cyl.z, cyl.r, (cube.p1.x + cube.p2.x) / 2, (cube.p1.z + cube.p2.z) / 2, cube.p2.x - cube.p1.x + 0.05, cube.p2.z - cube.p1.z + 0.05)) {
+        circle_intersects_rect(cyl.x, cyl.z, cyl.r, (cube.p1.x + cube.p2.x) / 2, (cube.p1.z + cube.p2.z) / 2, cube.p2.x - cube.p1.x + 0.05f, cube.p2.z - cube.p1.z + 0.05f)) {
         float y_mid = (cyl.y2 + cyl.y1) / 2.f;
-        if (y_mid < cube.p1.y) {
+        if (cyl.y1 < cube.p1.y) {
             return CollisionType::Down;
-        } else if (y_mid > cube.p2.y) {
+        } else if (cyl.y2 > cube.p2.y) {
             return CollisionType::Up;
         } else {
             int colType = CollisionType::NoCollision;
@@ -106,41 +99,49 @@ bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, 
     return (cornerDistSq <= pow(cr, 2.f));
 }
 
+bool circle_intersects_circle(float c1x, float c1y, float c1r, float c2x, float c2y, float c2r)
+{
+    float circleDistX = abs(c1x - c2x);
+    float circleDistY = abs(c1y - c2y);
+    float circleRads = (c1r + c2r);
+
+    if (circleDistX > circleRads || circleDistY > circleRads) {
+        return false;
+    }
+
+    if (circleDistX <= c2r || circleDistY <= c2r) {
+        return true;
+    }
+
+    float cornerDistSq = pow(circleDistX - c2r, 2.f) +
+        pow(circleDistY - c2r, 2.f);
+
+    return (cornerDistSq <= pow(c1r, 2.f));
+}
+
 CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2)
 {
    int cType = CollisionType::NoCollision;
-   if ((cyl1.y1 >= cyl2.y1 && cyl1.y1 <= cyl2.y2) ||
-           (cyl1.y2 >= cyl2.y1 && cyl1.y2 <= cyl2.y2)) {
-        int xdiff = cyl1.x - cyl2.x;
-        int zdiff = cyl1.z - cyl2.z;
-        if(triangulate(xdiff, zdiff) <= (cyl1.r + cyl2.r)) {
-            if(cyl1.x <= cyl2.x) {
-                cType |= CollisionType::Left;
+   if (line_intersects(cyl1.y1, cyl1.y2, cyl2.y1, cyl2.y2)) {
+        if(circle_intersects_circle(cyl1.x, cyl1.z, cyl1.r, cyl2.x, cyl2.z, cyl2.r)) {
+            float center_y = (cyl1.y1 + cyl1.y2) / 2.f;
+            if (center_y < cyl2.y1) {
+                return CollisionType::Up;
+            } else if (center_y > cyl2.y2) {
+                return CollisionType::Down;
             } else {
-                cType |= CollisionType::Right;
-            }
-            if(cyl1.z <= cyl2.z) {
-                cType |= CollisionType::Front;
-            } else {
-                cType |= CollisionType::Back;
+                if (cyl1.x <= cyl2.x) {
+                    cType |= CollisionType::Left;
+                } else {
+                    cType |= CollisionType::Right;
+                }
+                if (cyl1.z <= cyl2.z) {
+                    cType |= CollisionType::Front;
+                } else {
+                    cType |= CollisionType::Back;
+                }
             }
         }
-       if (cType != CollisionType::NoCollision) {
-           if (cyl1.y2 == cyl2.y1) {
-               cType = CollisionType::Up;
-           }
-           else if (cyl1.y1 == cyl2.y2) {
-               cType = CollisionType::Down;
-           }
-           else {
-               if (cyl1.y2 > cyl2.y1) {
-                   cType |= CollisionType::Up;
-               }
-               if (cyl1.y1 < cyl2.y2) {
-                   cType |= CollisionType::Down;
-               }
-           }
-       }
    }
    return (CollisionType)cType;
 }
@@ -157,16 +158,16 @@ void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos)
     mappos.y = int(realpos.z + realpos.y);
 }
 
-void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, int z)
+void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, float z)
 {
-    realpoint.x = mappos.x - float(z) / c_x_ratio;
-    realpoint.y = mappos.y - float(z);
+    realpoint.x = mappos.x - z / c_x_ratio;
+    realpoint.y = mappos.y - z;
     realpoint.z = z;
 }
 
 float triangle::degToRads(float degs)
 {
-    return degs * M_PI / 180;
+    return degs * M_PI_F / 180;
 }
 
 float triangle::getCSide(float aSide, float bSide, float cAngleRads)
@@ -179,23 +180,23 @@ float triangle::getAAngle(float aSide, float bSide, float cSide)
     return acos((cSide * cSide + bSide * bSide - aSide * aSide) / (2 * cSide * bSide));
 }
 
-void modifyVelocityFromTurn(float &curVelocity, float &curAngle, float intentAngle, float intentVelocity, float deltaVelocity)
+void modifyVelocityFromTurn(const MoveVector& intentVec, MoveVector& curVec, float deltaVelocity)
 {
-    float deltaAngle = intentAngle - curAngle;
+    float deltaAngle = intentVec.angle - curVec.angle;
     if(deltaAngle > 180) {
-        deltaAngle = intentAngle - (curAngle + 360);
+        deltaAngle = intentVec.angle - (curVec.angle + 360);
     }
-    float cSide = triangle::getCSide(curVelocity, intentVelocity, abs(triangle::degToRads(deltaAngle)));
-    float aAngle = triangle::getAAngle(curVelocity, intentVelocity, cSide);
-    float tmpCurVelocity = triangle::getCSide(curVelocity, cSide, aAngle);
-    float newDeltaAngle = triangle::getAAngle(curVelocity, deltaVelocity, tmpCurVelocity);
+    float cSide = triangle::getCSide(curVec.velocity, intentVec.velocity, abs(triangle::degToRads(deltaAngle)));
+    float aAngle = triangle::getAAngle(curVec.velocity, intentVec.velocity, cSide);
+    float tmpCurVelocity = triangle::getCSide(curVec.velocity, cSide, aAngle);
+    float newDeltaAngle = triangle::getAAngle(curVec.velocity, deltaVelocity, tmpCurVelocity);
     if(deltaAngle < 0) {
-        curAngle -= newDeltaAngle;
+        curVec.angle -= newDeltaAngle;
     } else {
-        curAngle += newDeltaAngle;
+        curVec.angle += newDeltaAngle;
     }
     if(newDeltaAngle > abs(deltaAngle)) {
-        curAngle = intentAngle;
+        curVec.angle = intentVec.angle;
     }
-    curVelocity = tmpCurVelocity;
+    curVec.velocity = tmpCurVelocity;
 }

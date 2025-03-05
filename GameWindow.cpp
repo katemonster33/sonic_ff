@@ -75,10 +75,10 @@ SpriteConfig sonicSpriteCfg{
   }
 };
 
-bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces, const mappoint& mt)
+bool GameWindow::any_surface_intersects(TileLayerId surfaceType, const mappoint& mt)
 {
     for(const auto& surface : surfaces) {
-        if(surface.mapRect.intersects(mt)) {
+        if((surfaceType == TileLayerId::Any || surface.layer == surfaceType) && surface.mapRect.intersects(mt)) {
             return true;
         }
     }
@@ -87,7 +87,7 @@ bool GameWindow::any_surface_intersects(const std::vector<SurfaceData> &surfaces
 
 tripoint GameWindow::getTripointAtMapPoint(const mappoint& mt)
 {
-    int zlevel = getZLevelAtPoint(mt);
+    float zlevel = getZLevelAtPoint(mt);
     tripoint output{ -1.f, -1.f, -1.f };
     if (zlevel != -1) {
         getRealPosFromMapPos(mt, output, zlevel);
@@ -95,7 +95,7 @@ tripoint GameWindow::getTripointAtMapPoint(const mappoint& mt)
     return output;
 }
 
-int GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
+float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
 {
     if (layer == TileLayerId::Ground || layer == TileLayerId::Any) {
         for (const SurfaceData& groundSurface : surfaces) {
@@ -108,7 +108,7 @@ int GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
         if (surface.layer != TileLayerId::Ground && (surface.layer == layer || layer == TileLayerId::Any)) {
             if (surface.mapRect.intersects(mappoint{ mt.x, mt.y - 1 })) {
                 if (surface.dimensions.p2.z > (surface.dimensions.p1.z + 1)) {
-                    return (mt.x - surface.mapRect.p1.x) / 2;
+                    return (float(mt.x) - surface.mapRect.p1.x) / 2;
                 } else {
                     return  surface.dimensions.p2.z;
                 }
@@ -135,8 +135,6 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     window(window),
     renderer(renderer)
 {
-    actors.push_back(new Actor(&sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), { 13, 11 }));
-
     //load the textures as they're shared between layers
     const auto& tileSets = map.getTilesets();
     assert(!tileSets.empty());
@@ -160,7 +158,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     const auto& mapSize = map.getTileCount();
     std::vector<SurfaceData> miscSurfaces;
     if(bgLayer != nullptr) {
-        int currentZ = 0;
+        float currentZ = 0;
         mappoint mt{ 0, 0 };
         for (; mt.x < mapSize.x; ++mt.x) {
             for (mt.y = 0; mt.y < mapSize.y; ++mt.y) {
@@ -194,7 +192,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
                     SurfaceData wallSurface;
                     wallSurface.layer = TileLayerId::ForegroundWall;
                     bool parseSuccess = false;
-                    int zOffset = 0;
+                    float zOffset = 0;
                     if(bgTileType == TileType::Wall) {
                         zOffset = getZLevelAtPoint({ mt.x, mt.y }, TileLayerId::ForegroundWall);
                         parseSuccess = traceWallTiles(mt, *fgWallLayer, zOffset, wallSurface);
@@ -217,8 +215,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         for(; mt.x < mapSize.x; mt.x++) {
             for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
                 TileType fgTileType = getTileType(mt, *fgLayer);
-                if(isGroundTile(fgTileType) && !any_surface_intersects(get_ground_geometries(), mt)) {
-                    int currentZ = getZLevelAtPoint(mt);
+                if(isGroundTile(fgTileType) && !any_surface_intersects(TileLayerId::Ground, mt)) {
+                    float currentZ = getZLevelAtPoint(mt);
                     SurfaceData fgSurface;
                     fgSurface.layer = TileLayerId::Ground;
                     traceGroundTiles(mt, *fgLayer, currentZ, fgSurface);
@@ -233,8 +231,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         for(; mt.x < mapSize.x; mt.x++) {
             for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
                 TileType fgTileType = getTileType(mt, *collLayer);
-                if(fgTileType == TileType::Box && !any_surface_intersects(get_obstacle_geometries(), mt)) {
-                    int currentZ = getZLevelAtPoint(mt);
+                if(fgTileType == TileType::Box && !any_surface_intersects(TileLayerId::Obstacle, mt)) {
+                    float currentZ = getZLevelAtPoint(mt);
                     SurfaceData fgSurface;
                     fgSurface.layer = TileLayerId::Obstacle;
                     traceBoxTiles(mt, *collLayer, currentZ, fgSurface);
@@ -244,6 +242,8 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
         }
     }
     z0pos = { surfaces[0].mapRect.p1.x, surfaces[0].mapRect.p1.y };
+
+    playerActor = new PlayerActor(*this, &sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), { 13, 11 });
 }
 
 GameWindow::~GameWindow()
@@ -254,7 +254,7 @@ GameWindow::~GameWindow()
     SDL_Quit();
 }
 
-int getFileLength(std::ifstream &file)
+size_t getFileLength(std::ifstream &file)
 {
     file.seekg(0, std::ios::end);
     size_t length = file.tellg();
@@ -268,7 +268,7 @@ bool GameWindow::readJsonTileData()
     std::ifstream jsonFile("assets/robotropolis-sheet.json", std::ios::in);
     assert(jsonFile.is_open());
 
-    int len = getFileLength(jsonFile);
+    size_t len = getFileLength(jsonFile);
     char *fileData = new char[len];
     jsonFile.read(fileData, len);
     jsonFile.close();
@@ -366,9 +366,8 @@ bool GameWindow::getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer)
     }
 }
 
-bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
-    surface.layer = TileLayerId::Ground;
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
@@ -396,7 +395,7 @@ bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, int cu
     return true;
 }
 
-bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     surface.layer = TileLayerId::Ground;
     TileType lastTileType = TileType::None;
@@ -427,7 +426,7 @@ bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, int
     return true;
 }
 
-bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
@@ -457,7 +456,7 @@ bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, int c
 /// @param layer Current layer being considered
 /// @param currentZ derived Z-point in 3D space
 /// @param surface Surface data to be written, containing the 3D collision data from the detected surface
-bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, int currentZ, SurfaceData &surface)
+bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
@@ -498,7 +497,6 @@ bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, i
 GameWindow *GameWindow::Create()
 {
     if(SDL_Init( SDL_INIT_VIDEO ) < 0) return nullptr;
-  
     
     SDL_Window *window = SDL_CreateWindow("Sonic Freedom Fighters", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 852, 480, SDL_WINDOW_SHOWN);
   
@@ -541,21 +539,24 @@ GameWindow *GameWindow::Create()
 
 void GameWindow::handle_input(const SDL_Event& event)
 {
-    for (Actor* actor : actors) {
-        actor->handle_input(event);
+    if (playerActor != nullptr) {
+        playerActor->handle_input(event);
     }
 }
 
 void GameWindow::drawFrame()
 {
     curTime = SDL_GetTicks64();
-    uint64_t frameDeltaTime = curTime - lastFrameTime;
+    float frameDeltaTime = float(curTime - lastFrameTime) / 1000.f;
     SDL_RenderClear(renderer);
     for (const auto& l : renderLayers) {
         l->draw(renderer);
     }
+    if (playerActor != nullptr) {
+        playerActor->draw(frameDeltaTime);
+    }
     for (Actor* actor : actors) {
-        actor->draw(this, frameDeltaTime / 1000.f);
+        actor->draw(frameDeltaTime);
     }
     // SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     // for (const auto& geometry : get_wall_geometries()) {
@@ -571,6 +572,21 @@ void GameWindow::drawFrame()
     // }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
+}
+
+cylinder collisionCylCpy;
+const CollisionData GameWindow::check_collision(const cylinder& collisionCyl)
+{
+    CollisionData collisions;
+    collisions.directions = CollisionType::NoCollision;
+    for (const auto& geometry : get_geometries()) {
+        int cTypeTmp = get_collision(geometry.dimensions, collisionCyl);
+        if (cTypeTmp != CollisionType::NoCollision) {
+            collisions.directions |= cTypeTmp;
+            collisions.collisions.push_back(CollisionData::CollisionItem{ cTypeTmp, geometry });
+        }
+    }
+    return collisions;
 }
 
 const std::vector<SurfaceData> GameWindow::get_wall_geometries() const 

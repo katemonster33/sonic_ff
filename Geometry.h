@@ -1,8 +1,11 @@
 #pragma once 
 #include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // helper variable for determining the actual position of the actor given a z-offset and trying to determine the x- and y-offset
-const double c_x_ratio = 2;//sqrt(5);
+const float c_x_ratio = 2.f;//sqrt(5);
+const float M_PI_F = float(M_PI);
 
 struct Rect2
 {
@@ -12,19 +15,16 @@ struct Rect2
     int h;
 };
 
-
-struct Hitbox
+struct MoveVector
 {
-    float x;
-    float y;
-    float w;
-    float h;
+    float angle;
+    float velocity;
 };
 
 struct mappoint
 {
-    int x;
-    int y;
+    unsigned int x;
+    unsigned int y;
 };
 
 struct tripoint
@@ -86,6 +86,6 @@ bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, 
 
 void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY);
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);
-void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, int z);
+void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, float z);
 
-void modifyVelocityFromTurn(float &curVelocity, float &curAngle, float intentAngle, float intentVelocity, float deltaVelocity);
+void modifyVelocityFromTurn(const MoveVector& intentVec, MoveVector& curVec, float deltaVelocity);

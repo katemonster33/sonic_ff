@@ -1,33 +1,46 @@
 #include "Actor.h"
 #include "SpriteSheet.h"
 #include "Geometry.h"
+#include "GameWindow.h"
 
-Actor::Actor(SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :
+Actor::Actor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :
     spriteConfig(spriteConfig),
     texture(texture),
-    mappos(mt),
-    realpos({-1.f, -1.f, -1.f}),
+    parentWindow(parentWindow),
+    realpos(parentWindow.getTripointAtMapPoint(mt)),
     intentMove( MoveVector{0.f, 0.f} ),
     curMove( MoveVector{0.f, 0.f} ),
     y_velocity(0.0f),
     collisionGeometry({-1.f, -1.f, -1.f, -1.f}),
+    spriteRect({-1, -1, -1, -1}),
     state(ActorState::Default),
     lastFrameState(ActorState::Default),
-    intent(NoIntent),
-    intentMoveKeys(MKeyNone),
     visible(true),
     spriteGroupIndex(0),
-    activeGroup(nullptr)
+    activeGroup(spriteConfig->spriteGroups[0]),
+    maxJumpTime(DEFAULT_JUMP_TIME),
+    jumpEndTime(-1.f),
+    collisions({0}),
+    collisionGeomCurrent({ -1.f, -1.f, -1.f, -1.f, -1.f })
 {
 }
 
 Actor::~Actor()
 {
-    delete spriteConfig;
-    delete texture;
 }
 
-bool Actor::isMovementKey(SDL_Keycode keyCode)
+PlayerActor::PlayerActor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint& mt) : 
+    Actor(parentWindow, spriteConfig, texture, mt),
+    intentKeys(NoIntent),
+    intentMoveKeys(MKeyNone)
+{
+}
+
+PlayerActor::~PlayerActor()
+{
+}
+
+bool PlayerActor::isMovementKey(SDL_Keycode keyCode)
 {
     switch (keyCode) {
         case SDLK_UP:
@@ -44,7 +57,7 @@ bool Actor::isMovementKey(SDL_Keycode keyCode)
         }
 }
 
-int Actor::getMovementTypeFromKey(SDL_Keycode keyCode)
+int PlayerActor::getMovementTypeFromKey(SDL_Keycode keyCode)
 {
     switch (keyCode) {
         case SDLK_UP:
@@ -64,7 +77,7 @@ int Actor::getMovementTypeFromKey(SDL_Keycode keyCode)
         }
 }
 
-int Actor::getIntentFromKey(SDL_Keycode keyCode)
+int PlayerActor::getIntentFromKey(SDL_Keycode keyCode)
 {
     switch(keyCode)
     {
@@ -86,7 +99,7 @@ int Actor::getIntentFromKey(SDL_Keycode keyCode)
     }
 }
 
-float Actor::getMoveAngleFromMoveKey(int mKeysDown)
+float PlayerActor::getMoveAngleFromMoveKey(int mKeysDown)
 {
     switch(mKeysDown) {
         case MKeyUp:
@@ -109,158 +122,193 @@ float Actor::getMoveAngleFromMoveKey(int mKeysDown)
     }
 }
 
-void Actor::handle_input(const SDL_Event& event) 
+void PlayerActor::handle_input(const SDL_Event& event)
 {
     int lastMoveKeys = intentMoveKeys;
     switch (event.type) {
     case SDL_KEYDOWN:
-        if(isMovementKey(event.key.keysym.sym)) {
-            intent |= Run;
-            intentMoveKeys |= getMovementTypeFromKey(event.key.keysym.sym);
-        } else {
-            intent |= getIntentFromKey(event.key.keysym.sym);
-        }
+        intentMoveKeys |= getMovementTypeFromKey(event.key.keysym.sym);
+        intentKeys |= getIntentFromKey(event.key.keysym.sym);
         break;
     case SDL_KEYUP:
-        if(isMovementKey(event.key.keysym.sym)) {
-            intent &= ~Run;
-            intentMoveKeys &= ~getMovementTypeFromKey(event.key.keysym.sym);
-        } else {
-            intent &= ~getIntentFromKey(event.key.keysym.sym);
-        }
+        intentMoveKeys &= ~getMovementTypeFromKey(event.key.keysym.sym);
+        intentKeys &= ~getIntentFromKey(event.key.keysym.sym);
         break;
     }
     if(lastMoveKeys != intentMoveKeys) {
         if(intentMoveKeys != MKeyNone) {
-            intent |= Run;
+            intentKeys |= Run;
             intentMove.angle = getMoveAngleFromMoveKey(intentMoveKeys);
             intentMove.velocity = MAX_PLAYER_X_VELOCITY;
         } else {
-            intent &= ~Run;
+            intentKeys &= ~Run;
             intentMove.velocity = 0.f;
             intentMove.angle = 0.f;
         }
     }
-    if (activeGroup == nullptr || activeGroup->groupState != state) {
+    if (activeGroup.groupState != state) {
         for (const SpriteGroup& sg : spriteConfig->spriteGroups) {
             if (sg.groupState == state) {
-                activeGroup = &sg;
+                activeGroup = sg;
             }
         }
-        if (activeGroup == nullptr) {
-            activeGroup = &spriteConfig->spriteGroups[0];
-        }
+    }
+
+    if (intentKeys & Jump && getCollisions().directions & Down && state != ActorState::Hurt) {
+        state = ActorState::Jumping;
+    } else if (state == ActorState::Jumping && intentKeys != Jump) {
+        state = ActorState::Default;
     }
 }
 
-CollisionType Actor::check_collision(GameWindow* parentWindow)
+/// <summary>
+/// Move the actor horizontally
+/// </summary>
+/// <param name="isRunning">is the actor's intent currently Run</param>
+/// <param name="deltaTime">time in seconds since last frame</param>
+/// <param name="intent">The intended move vector (speed+angle)</param>
+/// <param name="current">The current move vector (speed+angle)</param>
+void Actor::handleMovement(float deltaTime, const MoveVector &intent, MoveVector &current)
 {
-    int cType = CollisionType::NoCollision;
-    cylinder c;
-    c.x = realpos.x + collisionGeometry.x;
-    c.y1 = realpos.y + collisionGeometry.y - 1.f;
-    c.y2 = realpos.y + collisionGeometry.y;
-    c.r = 0.5f;
-    c.z = realpos.z + 2.f;
-    for (const auto& wallGeometry : parentWindow->get_wall_geometries()) {
-        cType |= get_collision(wallGeometry.dimensions, c);
-    }
-    for (const auto& ground : parentWindow->get_ground_geometries()) {
-        cType |= get_collision(ground.dimensions, c);
-    }
-    for (const auto& ground : parentWindow->get_obstacle_geometries()) {
-        cType |= get_collision(ground.dimensions, c);
-    }
-    return (CollisionType)cType;
 }
 
-void Actor::handleMovement(bool isRunning, float deltaTime, const MoveVector &intent, MoveVector &current)
+void Actor::handleCollisions()
 {
-    if(isRunning) {
-        if(intent.angle != current.angle && current.velocity != 0.f) {
+    collisionGeomCurrent.x = realpos.x + collisionGeometry.x;
+    collisionGeomCurrent.y1 = realpos.y + collisionGeometry.y1;
+    collisionGeomCurrent.y2 = realpos.y + collisionGeometry.y2;
+    collisionGeomCurrent.r = 0.5f;
+    collisionGeomCurrent.z = realpos.z + 2.f;
+    collisions = parentWindow.check_collision(collisionGeomCurrent);
+}
+
+/// <summary>
+/// Move the actor horizontally
+/// </summary>
+/// <param name="isRunning">is the actor's intent currently Run</param>
+/// <param name="deltaTime">time in seconds since last frame</param>
+/// <param name="intent">The intended move vector (speed+angle)</param>
+/// <param name="current">The current move vector (speed+angle)</param>
+void PlayerActor::handleMovement(float deltaTime, const MoveVector& intent, MoveVector& current)
+{
+    const CollisionData& colData = getCollisions();
+    if (intentKeys & Run) {
+        if (intent.angle != current.angle && current.velocity != 0.f) {
             if (intent.angle == abs(current.angle - 180) || intent.angle == abs(current.angle + 180)) {
                 current.velocity -= (PLAYER_RUN_ACCEL * deltaTime * 2);
-            } else {
-                modifyVelocityFromTurn(current.velocity, current.angle, intent.angle, intent.velocity, PLAYER_RUN_ACCEL * deltaTime);
+            }
+            else {
+                modifyVelocityFromTurn(intent, current, PLAYER_RUN_ACCEL * deltaTime);
             }
         } else {
             current.angle = intent.angle;
             current.velocity += (PLAYER_RUN_ACCEL * deltaTime);
         }
-        if(current.velocity > MAX_PLAYER_X_VELOCITY) {
+        if (current.velocity > MAX_PLAYER_X_VELOCITY) {
             current.velocity = MAX_PLAYER_X_VELOCITY;
         } else if (current.velocity < 0.f) {
             current.velocity = 0.f;
         }
-    } else {
+    }
+    else {
         if (current.velocity > 0.f) {
             current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
-            if(current.velocity <= 0.f) {
+            if (current.velocity <= 0.f) {
                 current.velocity = 0.f;
                 current.angle = 0.f;
             }
         }
     }
-}
-
-void Actor::draw(GameWindow* parentWindow, float deltaQuotient)
-{
-    if(realpos.x == -1 && realpos.y == -1 && realpos.z == -1) {
-        tripoint actor_loc = parentWindow->getTripointAtMapPoint(mappos);
-        realpos.x = actor_loc.x;
-        realpos.y = actor_loc.y;
-        realpos.z = actor_loc.z;
-    }
-    if (activeGroup == nullptr) {
-        activeGroup = &spriteConfig->spriteGroups[0];
-    }
-    const SDL_Rect &spriteRect = activeGroup->sprites[spriteGroupIndex];
-    if(collisionGeometry.x == -1.f) {
-        collisionGeometry.x = collisionGeometry.y = 0;
-        collisionGeometry.w = spriteRect.w;
-        collisionGeometry.h = spriteRect.h;
-    }
-    CollisionType colType = check_collision(parentWindow);
-    handleMovement(intent & Run, deltaQuotient, intentMove, curMove);
-    if(curMove.velocity != 0.0f) {
+    if (curMove.velocity != 0.0f) {
         // 0,1;90,0;180,-1;270;0,360,1
-        float percentZ = -(abs(fmod(curMove.angle, 360) - 180)/90-1);
+        float percentZ = -(fabs(float(fmod(curMove.angle, 360) - 180)) / 90 - 1);
         // 0,0;90,1;180,0;270,-1;360,0
-        float percentX = abs(fmod(curMove.angle + 270, 360) - 180) / 90 - 1;
-        float xmove = curMove.velocity * percentX * deltaQuotient;
-        if((colType & Left && xmove < 0.f) || 
-            (colType & Right && xmove > 0.f)) {
-                xmove = 0.f;
+        float percentX = abs(float(fmod(curMove.angle + 270, 360) - 180)) / 90 - 1;
+        float xmove = curMove.velocity * percentX * deltaTime;
+        if ((colData.directions & Left && xmove < 0.f) ||
+            (colData.directions & Right && xmove > 0.f)) {
+            xmove = 0.f;
         }
         realpos.x += xmove;
-        float zmove = curMove.velocity * percentZ * deltaQuotient;
-        if((colType & Front && zmove > 0.f) || 
-            (colType & Back && zmove < 0.f)) {
-                zmove = 0.f;
+        float zmove = curMove.velocity * percentZ * deltaTime;
+        if ((colData.directions & Front && zmove > 0.f) ||
+            (colData.directions & Back && zmove < 0.f)) {
+            zmove = 0.f;
         }
         realpos.z += zmove;
     }
+}
 
-    if (intent & Jump) {
-        if(colType & Down) {
+void Actor::handleJump(float deltaTime)
+{
+    if (state == ActorState::Jumping) {
+        if(jumpEndTime == -1.f) {
             y_velocity = MAX_PLAYER_JUMP_VELOCITY;
+            jumpEndTime = maxJumpTime;
+        } else {
+            jumpEndTime -= deltaTime;
+            if (jumpEndTime <= 0) {
+                jumpEndTime = -1.f;
+                state = ActorState::Default;
+            }
+        }
+        if (collisions.directions & CollisionType::Up) {
+            jumpEndTime = -1.f;
+            state = ActorState::Default;
         }
     }
-    if(!(colType & Down)) {
-        y_velocity -= gravity_accel * deltaQuotient;
-        if(y_velocity < MIN_PLAYER_Y_VELOCITY) {
-            y_velocity = MIN_PLAYER_Y_VELOCITY;
+}
+
+void Actor::handleGravity(float deltaTime)
+{
+    if (state != ActorState::Jumping) {
+        if (collisions.directions & Down) {
+            y_velocity = 0.0f;
+            for (const auto& colItem : collisions.collisions) {
+                if (colItem.direction & Down) {
+                    realpos.y = colItem.surface.dimensions.p1.y;
+                    break;
+                }
+            }
+        } else {
+            y_velocity -= gravity_accel * deltaTime;
+            if (y_velocity < MIN_PLAYER_Y_VELOCITY) {
+                y_velocity = MIN_PLAYER_Y_VELOCITY;
+            }
         }
-        realpos.y -= y_velocity;
     }
+}
+
+/// <summary>
+/// draw a frame of an Actor
+/// </summary>
+/// <param name="parentWindow">the window this actor belongs to</param>
+/// <param name="deltaTime">the time (in seconds) elapsed since the last frame</param>
+void Actor::draw(float deltaTime)
+{
+    const SDL_Rect &spriteRect = activeGroup.sprites[spriteGroupIndex];
+    if(collisionGeometry.x == -1.f) {
+        collisionGeometry.x = float(spriteRect.x);
+        collisionGeometry.y1 = spriteRect.y - 1.f;
+        collisionGeometry.y2 = float(spriteRect.y);
+        collisionGeometry.r = 0.5f;
+        collisionGeometry.z = 2.f;
+    }
+
+    handleCollisions();
+    handleMovement(deltaTime, intentMove, curMove);
+    handleJump(deltaTime);
+    handleGravity(deltaTime);
+    realpos.y -= y_velocity;
     if (state == ActorState::Running) {
         spriteGroupIndex++;
-        if (spriteGroupIndex == activeGroup->sprites.size()) {
+        if (spriteGroupIndex == activeGroup.sprites.size()) {
             spriteGroupIndex = 0;
         }
     }
-
-    int actualX = 0, actualY = 0;
-    getPixelPosFromRealPos(realpos, actualX, actualY);
-    texture->draw(spriteRect.x, spriteRect.y, int(actualX), int(actualY), spriteRect.w, spriteRect.h);
+    if (visible) {
+        int actualX = 0, actualY = 0;
+        getPixelPosFromRealPos(realpos, actualX, actualY);
+        texture->draw(spriteRect.x, spriteRect.y, int(actualX), int(actualY), spriteRect.w, spriteRect.h);
+    }
 }
