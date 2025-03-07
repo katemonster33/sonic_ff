@@ -17,8 +17,11 @@ struct Rect2
 
 struct MoveVector
 {
-    float angle;
-    float velocity;
+    // float angle;
+    // float velocity;
+    float x;
+    float y;
+    float z;
 };
 
 struct mappoint

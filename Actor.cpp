@@ -99,26 +99,26 @@ int PlayerActor::getIntentFromKey(SDL_Keycode keyCode)
     }
 }
 
-float PlayerActor::getMoveAngleFromMoveKey(int mKeysDown)
+MoveVector PlayerActor::getMoveVectorFromMoveKey(int mKeysDown)
 {
     switch(mKeysDown) {
         case MKeyUp:
         default:
-            return 0.f;
+            return {0.f, 0.f, -MAX_PLAYER_X_VELOCITY};
         case MKeyUp | MKeyRight:
-            return 45.f;
+            return {MAX_PLAYER_X_VELOCITY / 2, 0.f, -MAX_PLAYER_X_VELOCITY / 2};
         case MKeyRight:
-            return 90.f;
+            return {MAX_PLAYER_X_VELOCITY, 0.f, 0.f};
         case MKeyRight | MKeyDown:
-            return 135.f;
+            return {MAX_PLAYER_X_VELOCITY / 2, 0.f, (MAX_PLAYER_X_VELOCITY / 2)};
         case MKeyDown:
-            return 180.f;
+            return {0.f, 0.f, MAX_PLAYER_X_VELOCITY};
         case MKeyDown | MKeyLeft:
-            return 225.f;
+            return {-(MAX_PLAYER_X_VELOCITY / 2), 0.f, (MAX_PLAYER_X_VELOCITY / 2)};
         case MKeyLeft:
-            return 270.f;
+            return {-MAX_PLAYER_X_VELOCITY, 0.f, 0.f};
         case MKeyLeft | MKeyUp:
-            return 315.f;
+            return {-(MAX_PLAYER_X_VELOCITY / 2), 0.f, -MAX_PLAYER_X_VELOCITY / 2};
     }
 }
 
@@ -138,12 +138,13 @@ void PlayerActor::handle_input(const SDL_Event& event)
     if(lastMoveKeys != intentMoveKeys) {
         if(intentMoveKeys != MKeyNone) {
             intentKeys |= Run;
-            intentMove.angle = getMoveAngleFromMoveKey(intentMoveKeys);
-            intentMove.velocity = MAX_PLAYER_X_VELOCITY;
+            intentMove = getMoveVectorFromMoveKey(intentMoveKeys);
+            // intentMove.angle = getMoveAngleFromMoveKey(intentMoveKeys);
+            // intentMove.velocity = MAX_PLAYER_X_VELOCITY;
         } else {
             intentKeys &= ~Run;
-            intentMove.velocity = 0.f;
-            intentMove.angle = 0.f;
+            intentMove.x = 0.f;
+            intentMove.z = 0.f;
         }
     }
     if (activeGroup.groupState != state) {
@@ -191,52 +192,84 @@ void Actor::handleCollisions()
 /// <param name="current">The current move vector (speed+angle)</param>
 void PlayerActor::handleMovement(float deltaTime, const MoveVector& intent, MoveVector& current)
 {
+    // const CollisionData& colData = getCollisions();
+    // if (intentKeys & Run) {
+    //     if (intent.angle != current.angle && current.velocity != 0.f) {
+    //         if (intent.angle == abs(current.angle - 180) || intent.angle == abs(current.angle + 180)) {
+    //             current.velocity -= (PLAYER_RUN_ACCEL * deltaTime * 2);
+    //         }
+    //         else {
+    //             modifyVelocityFromTurn(intent, current, PLAYER_RUN_ACCEL * deltaTime);
+    //         }
+    //     } else {
+    //         current.angle = intent.angle;
+    //         current.velocity += (PLAYER_RUN_ACCEL * deltaTime);
+    //     }
+    //     if (current.velocity > MAX_PLAYER_X_VELOCITY) {
+    //         current.velocity = MAX_PLAYER_X_VELOCITY;
+    //     } else if (current.velocity < 0.f) {
+    //         current.velocity = 0.f;
+    //     }
+    // }
+    // else {
+    //     if (current.velocity > 0.f) {
+    //         current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
+    //         if (current.velocity <= 0.f) {
+    //             current.velocity = 0.f;
+    //             current.angle = 0.f;
+    //         }
+    //     }
+    // }
+    // if (curMove.velocity != 0.0f) {
+    //     // 0,1;90,0;180,-1;270;0,360,1
+    //     float percentZ = -(fabs(float(fmod(curMove.angle, 360) - 180)) / 90 - 1);
+    //     // 0,0;90,1;180,0;270,-1;360,0
+    //     float percentX = abs(float(fmod(curMove.angle + 270, 360) - 180)) / 90 - 1;
+    //     float xmove = curMove.velocity * percentX * deltaTime;
+    //     if ((colData.directions & Left && xmove < 0.f) ||
+    //         (colData.directions & Right && xmove > 0.f)) {
+    //         xmove = 0.f;
+    //     }
+    //     realpos.x += xmove;
+    //     float zmove = curMove.velocity * percentZ * deltaTime;
+    //     if ((colData.directions & Front && zmove > 0.f) ||
+    //         (colData.directions & Back && zmove < 0.f)) {
+    //         zmove = 0.f;
+    //     }
+    //     realpos.z += zmove;
+    // }
+
     const CollisionData& colData = getCollisions();
-    if (intentKeys & Run) {
-        if (intent.angle != current.angle && current.velocity != 0.f) {
-            if (intent.angle == abs(current.angle - 180) || intent.angle == abs(current.angle + 180)) {
-                current.velocity -= (PLAYER_RUN_ACCEL * deltaTime * 2);
-            }
-            else {
-                modifyVelocityFromTurn(intent, current, PLAYER_RUN_ACCEL * deltaTime);
-            }
-        } else {
-            current.angle = intent.angle;
-            current.velocity += (PLAYER_RUN_ACCEL * deltaTime);
-        }
-        if (current.velocity > MAX_PLAYER_X_VELOCITY) {
-            current.velocity = MAX_PLAYER_X_VELOCITY;
-        } else if (current.velocity < 0.f) {
-            current.velocity = 0.f;
-        }
-    }
-    else {
-        if (current.velocity > 0.f) {
-            current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
-            if (current.velocity <= 0.f) {
-                current.velocity = 0.f;
-                current.angle = 0.f;
-            }
-        }
-    }
-    if (curMove.velocity != 0.0f) {
+    if(intent.x != current.x || intent.z != current.z) {
+
         // 0,1;90,0;180,-1;270;0,360,1
-        float percentZ = -(fabs(float(fmod(curMove.angle, 360) - 180)) / 90 - 1);
-        // 0,0;90,1;180,0;270,-1;360,0
-        float percentX = abs(float(fmod(curMove.angle + 270, 360) - 180)) / 90 - 1;
-        float xmove = curMove.velocity * percentX * deltaTime;
-        if ((colData.directions & Left && xmove < 0.f) ||
-            (colData.directions & Right && xmove > 0.f)) {
-            xmove = 0.f;
+
+        float zDelta = intent.z - current.z;
+        float xDelta = intent.x - current.x;
+        float zxDelta = fabs(xDelta) + fabs(zDelta);
+        float vDelta = PLAYER_RUN_ACCEL * deltaTime;
+        curMove.x += xDelta / zxDelta * vDelta;
+        curMove.z += zDelta / zxDelta * vDelta;
+        if((xDelta < 0 && curMove.x < intent.x) || 
+            (xDelta > 0 && curMove.x > intent.x)) {
+            curMove.x = intent.x;
         }
-        realpos.x += xmove;
-        float zmove = curMove.velocity * percentZ * deltaTime;
-        if ((colData.directions & Front && zmove > 0.f) ||
-            (colData.directions & Back && zmove < 0.f)) {
-            zmove = 0.f;
+        if((zDelta < 0 && curMove.z < intent.z) || 
+            (zDelta > 0 && curMove.z > intent.z)) {
+            curMove.z = intent.z;
         }
-        realpos.z += zmove;
+
+        if ((colData.directions & Left && curMove.x < 0.f) ||
+            (colData.directions & Right && curMove.x > 0.f)) {
+            curMove.x = 0.f;
+        }
+        if ((colData.directions & Front && curMove.z > 0.f) ||
+            (colData.directions & Back && curMove.z < 0.f)) {
+            curMove.z = 0.f;
+        }
     }
+    realpos.z += curMove.z;
+    realpos.x += curMove.x;
 }
 
 void Actor::handleJump(float deltaTime)

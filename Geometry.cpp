@@ -180,23 +180,28 @@ float triangle::getAAngle(float aSide, float bSide, float cSide)
     return acos((cSide * cSide + bSide * bSide - aSide * aSide) / (2 * cSide * bSide));
 }
 
-void modifyVelocityFromTurn(const MoveVector& intentVec, MoveVector& curVec, float deltaVelocity)
-{
-    float deltaAngle = intentVec.angle - curVec.angle;
-    if(deltaAngle > 180) {
-        deltaAngle = intentVec.angle - (curVec.angle + 360);
-    }
-    float cSide = triangle::getCSide(curVec.velocity, intentVec.velocity, abs(triangle::degToRads(deltaAngle)));
-    float aAngle = triangle::getAAngle(curVec.velocity, intentVec.velocity, cSide);
-    float tmpCurVelocity = triangle::getCSide(curVec.velocity, cSide, aAngle);
-    float newDeltaAngle = triangle::getAAngle(curVec.velocity, deltaVelocity, tmpCurVelocity);
-    if(deltaAngle < 0) {
-        curVec.angle -= newDeltaAngle;
-    } else {
-        curVec.angle += newDeltaAngle;
-    }
-    if(newDeltaAngle > abs(deltaAngle)) {
-        curVec.angle = intentVec.angle;
-    }
-    curVec.velocity = tmpCurVelocity;
-}
+// void modifyVelocityFromTurn(const MoveVector& intentVec, MoveVector& curVec, float deltaVelocity)
+// {
+//     float deltaAngle = fmod(abs(intentVec.angle - curVec.angle), 360);
+
+//     if (deltaAngle > 180) {
+//         deltaAngle = 360 - deltaAngle;
+//     }
+//     // float deltaAngle = intentVec.angle - curVec.angle;
+//     // if(deltaAngle > 180) {
+//     //     deltaAngle = intentVec.angle - (curVec.angle + 360);
+//     // }
+//     float cSide = triangle::getCSide(curVec.velocity, intentVec.velocity, abs(triangle::degToRads(deltaAngle)));
+//     float aAngle = triangle::getAAngle(curVec.velocity, intentVec.velocity, cSide);
+//     float tmpCurVelocity = triangle::getCSide(curVec.velocity, cSide, aAngle);
+//     float newDeltaAngle = triangle::getAAngle(curVec.velocity, deltaVelocity, tmpCurVelocity);
+//     if(deltaAngle < 0) {
+//         curVec.angle -= newDeltaAngle;
+//     } else {
+//         curVec.angle += newDeltaAngle;
+//     }
+//     if(newDeltaAngle > abs(deltaAngle)) {
+//         curVec.angle = intentVec.angle;
+//     }
+//     curVec.velocity = tmpCurVelocity;
+// }

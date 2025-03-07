@@ -56,7 +56,7 @@ class PlayerActor : public Actor
     int intentKeys;
     int intentMoveKeys;
 
-    float getMoveAngleFromMoveKey(int mKeysDown);
+    MoveVector getMoveVectorFromMoveKey(int mKeysDown);
     bool isMovementKey(SDL_Keycode keyCode);
     int getMovementTypeFromKey(SDL_Keycode keyCode);
     int getIntentFromKey(SDL_Keycode keyCode);
