@@ -383,7 +383,7 @@ bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, float 
     surface.mapRect.p2.y++;
     while (surface.mapRect.p2.y < mapSize.y &&
         surface.mapRect.p2.x < mapSize.x &&
-    getTileType({surface.mapRect.p2.x - 1, surface.mapRect.p2.y - 1}, layer) == TileType::Box){
+    getTileType({surface.mapRect.p2.x - 1, surface.mapRect.p2.y - 1}, layer) == TileType::Box) {
         surface.mapRect.p2.y++;
     }
     if(surface.mapRect.p2.y == mt.y) {

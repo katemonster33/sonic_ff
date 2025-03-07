@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ActorState.h"
-#include "Texture.h"
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 #include <memory>
@@ -13,28 +12,24 @@ const float MIN_PLAYER_Y_VELOCITY = -5.f;
 const float MAX_PLAYER_JUMP_VELOCITY = 0.5f;
 const float MAX_PLAYER_Z_VELOCITY = 2.0f;
 const float PLAYER_RUN_ACCEL = 5.0f; // 5 m/s^2
-const float DEFAULT_JUMP_TIME = 0.3f;
+const float DEFAULT_JUMP_TIME = 0.15f;
 
 class Actor
 {
+    class GameWindow& parentWindow;
     CollisionData collisions;
+    cylinder collisionGeometry;
     cylinder collisionGeomCurrent;
-protected:
+    tripoint realpos;
     float jumpEndTime;
     float maxJumpTime;
-    class GameWindow& parentWindow;
-    Rect2 spriteRect;
-    cylinder collisionGeometry;
-    tripoint realpos;
-    MoveVector intentMove;
-    MoveVector curMove;
-    float y_velocity;
     ActorState lastFrameState;
+    MoveVector curMove;
+    std::unique_ptr<class Texture> texture;
+    std::unique_ptr<class SpriteProvider> spriteProvider;
+protected:
+    MoveVector intentMove;
 	ActorState state;
-    std::unique_ptr<Texture> texture;
-    size_t spriteGroupIndex;
-	std::unique_ptr<struct SpriteConfig> spriteConfig;
-    struct SpriteGroup& activeGroup;
 	bool visible;
 
     void handleCollisions();
@@ -43,7 +38,7 @@ protected:
     void handleJump(float deltaTime);
 
 public:
-	Actor( GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt);
+	Actor( GameWindow& parentWindow, struct SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt);
     virtual ~Actor();
 
 	ActorState GetState() { return state; }
@@ -56,13 +51,11 @@ class PlayerActor : public Actor
     int intentKeys;
     int intentMoveKeys;
 
-    MoveVector getMoveVectorFromMoveKey(int mKeysDown);
+    void getMoveVectorFromMoveKey(int mKeysDown, MoveVector &mv);
     bool isMovementKey(SDL_Keycode keyCode);
     int getMovementTypeFromKey(SDL_Keycode keyCode);
     int getIntentFromKey(SDL_Keycode keyCode);
 
-protected:
-    void handleMovement(float deltaTime, const MoveVector& intent, MoveVector& current);
 public:
     PlayerActor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint& mt);
     ~PlayerActor();

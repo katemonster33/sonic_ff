@@ -2,22 +2,20 @@
 #include "SpriteSheet.h"
 #include "Geometry.h"
 #include "GameWindow.h"
+#include "Texture.h"
+#include <cassert>
 
 Actor::Actor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :
-    spriteConfig(spriteConfig),
+    spriteProvider(std::make_unique<SpriteProvider>(spriteConfig)),
     texture(texture),
     parentWindow(parentWindow),
     realpos(parentWindow.getTripointAtMapPoint(mt)),
-    intentMove( MoveVector{0.f, 0.f} ),
-    curMove( MoveVector{0.f, 0.f} ),
-    y_velocity(0.0f),
+    intentMove( MoveVector{0.f, 0.f, 0.f} ),
+    curMove( MoveVector{0.f, 0.f, 0.f} ),
     collisionGeometry({-1.f, -1.f, -1.f, -1.f}),
-    spriteRect({-1, -1, -1, -1}),
     state(ActorState::Default),
     lastFrameState(ActorState::Default),
     visible(true),
-    spriteGroupIndex(0),
-    activeGroup(spriteConfig->spriteGroups[0]),
     maxJumpTime(DEFAULT_JUMP_TIME),
     jumpEndTime(-1.f),
     collisions({0}),
@@ -99,27 +97,44 @@ int PlayerActor::getIntentFromKey(SDL_Keycode keyCode)
     }
 }
 
-MoveVector PlayerActor::getMoveVectorFromMoveKey(int mKeysDown)
+void PlayerActor::getMoveVectorFromMoveKey(int mKeysDown, MoveVector &mv)
 {
     switch(mKeysDown) {
         case MKeyUp:
         default:
-            return {0.f, 0.f, -MAX_PLAYER_X_VELOCITY};
+            mv.x = 0.f;
+            mv.z = -MAX_PLAYER_X_VELOCITY;
+            break;
         case MKeyUp | MKeyRight:
-            return {MAX_PLAYER_X_VELOCITY / 2, 0.f, -MAX_PLAYER_X_VELOCITY / 2};
+            mv.x = MAX_PLAYER_X_VELOCITY / 2;
+            mv.z = -MAX_PLAYER_X_VELOCITY / 2;
+            break;
         case MKeyRight:
-            return {MAX_PLAYER_X_VELOCITY, 0.f, 0.f};
+            mv.x = MAX_PLAYER_X_VELOCITY;
+            mv.z = 0.f;
+            break;
         case MKeyRight | MKeyDown:
-            return {MAX_PLAYER_X_VELOCITY / 2, 0.f, (MAX_PLAYER_X_VELOCITY / 2)};
+            mv.x = MAX_PLAYER_X_VELOCITY / 2;
+            mv.z = MAX_PLAYER_X_VELOCITY / 2;
+            break;
         case MKeyDown:
-            return {0.f, 0.f, MAX_PLAYER_X_VELOCITY};
+            mv.x = 0.f;
+            mv.z = MAX_PLAYER_X_VELOCITY;
+            break;
         case MKeyDown | MKeyLeft:
-            return {-(MAX_PLAYER_X_VELOCITY / 2), 0.f, (MAX_PLAYER_X_VELOCITY / 2)};
+            mv.x = -MAX_PLAYER_X_VELOCITY / 2;
+            mv.z = MAX_PLAYER_X_VELOCITY / 2;
+            break;
         case MKeyLeft:
-            return {-MAX_PLAYER_X_VELOCITY, 0.f, 0.f};
+            mv.x = -MAX_PLAYER_X_VELOCITY;
+            mv.z = 0.f;
+            break;
         case MKeyLeft | MKeyUp:
-            return {-(MAX_PLAYER_X_VELOCITY / 2), 0.f, -MAX_PLAYER_X_VELOCITY / 2};
+            mv.x = -MAX_PLAYER_X_VELOCITY / 2;
+            mv.z = -MAX_PLAYER_X_VELOCITY / 2;
+            break;
     }
+    assert((abs(mv.x) + abs(mv.z)) <= MAX_PLAYER_X_VELOCITY);
 }
 
 void PlayerActor::handle_input(const SDL_Event& event)
@@ -138,7 +153,7 @@ void PlayerActor::handle_input(const SDL_Event& event)
     if(lastMoveKeys != intentMoveKeys) {
         if(intentMoveKeys != MKeyNone) {
             intentKeys |= Run;
-            intentMove = getMoveVectorFromMoveKey(intentMoveKeys);
+            getMoveVectorFromMoveKey(intentMoveKeys, intentMove);
             // intentMove.angle = getMoveAngleFromMoveKey(intentMoveKeys);
             // intentMove.velocity = MAX_PLAYER_X_VELOCITY;
         } else {
@@ -147,18 +162,11 @@ void PlayerActor::handle_input(const SDL_Event& event)
             intentMove.z = 0.f;
         }
     }
-    if (activeGroup.groupState != state) {
-        for (const SpriteGroup& sg : spriteConfig->spriteGroups) {
-            if (sg.groupState == state) {
-                activeGroup = sg;
-            }
-        }
-    }
 
-    if (intentKeys & Jump && getCollisions().directions & Down && state != ActorState::Hurt) {
-        state = ActorState::Jumping;
-    } else if (state == ActorState::Jumping && intentKeys != Jump) {
-        state = ActorState::Default;
+    if (intentKeys & Jump) {
+        intentMove.y = MAX_PLAYER_JUMP_VELOCITY;
+    } else {
+        intentMove.y = 0.f;
     }
 }
 
@@ -171,76 +179,8 @@ void PlayerActor::handle_input(const SDL_Event& event)
 /// <param name="current">The current move vector (speed+angle)</param>
 void Actor::handleMovement(float deltaTime, const MoveVector &intent, MoveVector &current)
 {
-}
-
-void Actor::handleCollisions()
-{
-    collisionGeomCurrent.x = realpos.x + collisionGeometry.x;
-    collisionGeomCurrent.y1 = realpos.y + collisionGeometry.y1;
-    collisionGeomCurrent.y2 = realpos.y + collisionGeometry.y2;
-    collisionGeomCurrent.r = 0.5f;
-    collisionGeomCurrent.z = realpos.z + 2.f;
-    collisions = parentWindow.check_collision(collisionGeomCurrent);
-}
-
-/// <summary>
-/// Move the actor horizontally
-/// </summary>
-/// <param name="isRunning">is the actor's intent currently Run</param>
-/// <param name="deltaTime">time in seconds since last frame</param>
-/// <param name="intent">The intended move vector (speed+angle)</param>
-/// <param name="current">The current move vector (speed+angle)</param>
-void PlayerActor::handleMovement(float deltaTime, const MoveVector& intent, MoveVector& current)
-{
-    // const CollisionData& colData = getCollisions();
-    // if (intentKeys & Run) {
-    //     if (intent.angle != current.angle && current.velocity != 0.f) {
-    //         if (intent.angle == abs(current.angle - 180) || intent.angle == abs(current.angle + 180)) {
-    //             current.velocity -= (PLAYER_RUN_ACCEL * deltaTime * 2);
-    //         }
-    //         else {
-    //             modifyVelocityFromTurn(intent, current, PLAYER_RUN_ACCEL * deltaTime);
-    //         }
-    //     } else {
-    //         current.angle = intent.angle;
-    //         current.velocity += (PLAYER_RUN_ACCEL * deltaTime);
-    //     }
-    //     if (current.velocity > MAX_PLAYER_X_VELOCITY) {
-    //         current.velocity = MAX_PLAYER_X_VELOCITY;
-    //     } else if (current.velocity < 0.f) {
-    //         current.velocity = 0.f;
-    //     }
-    // }
-    // else {
-    //     if (current.velocity > 0.f) {
-    //         current.velocity -= (PLAYER_RUN_ACCEL * deltaTime);
-    //         if (current.velocity <= 0.f) {
-    //             current.velocity = 0.f;
-    //             current.angle = 0.f;
-    //         }
-    //     }
-    // }
-    // if (curMove.velocity != 0.0f) {
-    //     // 0,1;90,0;180,-1;270;0,360,1
-    //     float percentZ = -(fabs(float(fmod(curMove.angle, 360) - 180)) / 90 - 1);
-    //     // 0,0;90,1;180,0;270,-1;360,0
-    //     float percentX = abs(float(fmod(curMove.angle + 270, 360) - 180)) / 90 - 1;
-    //     float xmove = curMove.velocity * percentX * deltaTime;
-    //     if ((colData.directions & Left && xmove < 0.f) ||
-    //         (colData.directions & Right && xmove > 0.f)) {
-    //         xmove = 0.f;
-    //     }
-    //     realpos.x += xmove;
-    //     float zmove = curMove.velocity * percentZ * deltaTime;
-    //     if ((colData.directions & Front && zmove > 0.f) ||
-    //         (colData.directions & Back && zmove < 0.f)) {
-    //         zmove = 0.f;
-    //     }
-    //     realpos.z += zmove;
-    // }
-
     const CollisionData& colData = getCollisions();
-    if(intent.x != current.x || intent.z != current.z) {
+    if (intent.x != current.x || intent.z != current.z) {
 
         // 0,1;90,0;180,-1;270;0,360,1
 
@@ -250,11 +190,11 @@ void PlayerActor::handleMovement(float deltaTime, const MoveVector& intent, Move
         float vDelta = PLAYER_RUN_ACCEL * deltaTime;
         curMove.x += xDelta / zxDelta * vDelta;
         curMove.z += zDelta / zxDelta * vDelta;
-        if((xDelta < 0 && curMove.x < intent.x) || 
+        if ((xDelta < 0 && curMove.x < intent.x) ||
             (xDelta > 0 && curMove.x > intent.x)) {
             curMove.x = intent.x;
         }
-        if((zDelta < 0 && curMove.z < intent.z) || 
+        if ((zDelta < 0 && curMove.z < intent.z) ||
             (zDelta > 0 && curMove.z > intent.z)) {
             curMove.z = intent.z;
         }
@@ -268,20 +208,30 @@ void PlayerActor::handleMovement(float deltaTime, const MoveVector& intent, Move
             curMove.z = 0.f;
         }
     }
-    realpos.z += curMove.z;
-    realpos.x += curMove.x;
+}
+
+void Actor::handleCollisions()
+{
+    collisionGeomCurrent.x = realpos.x + collisionGeometry.x;
+    collisionGeomCurrent.y1 = realpos.y + collisionGeometry.y1;
+    collisionGeomCurrent.y2 = realpos.y + collisionGeometry.y2;
+    collisionGeomCurrent.r = 0.5f;
+    collisionGeomCurrent.z = realpos.z + 2.f;
+    collisions = parentWindow.check_collision(collisionGeomCurrent);
 }
 
 void Actor::handleJump(float deltaTime)
 {
-    if (state == ActorState::Jumping) {
-        if(jumpEndTime == -1.f) {
-            y_velocity = MAX_PLAYER_JUMP_VELOCITY;
+    if (intentMove.y != 0.f && state != ActorState::Hurt ) {
+        if(jumpEndTime == -1.f && state != ActorState::Jumping && getCollisions().directions & Down) {
+            state = ActorState::Jumping;
+            curMove.y = intentMove.y;
             jumpEndTime = maxJumpTime;
         } else {
             jumpEndTime -= deltaTime;
             if (jumpEndTime <= 0) {
                 jumpEndTime = -1.f;
+                intentMove.y = 0.f;
                 state = ActorState::Default;
             }
         }
@@ -294,9 +244,9 @@ void Actor::handleJump(float deltaTime)
 
 void Actor::handleGravity(float deltaTime)
 {
-    if (state != ActorState::Jumping) {
+    if (intentMove.y == 0.f) {
         if (collisions.directions & Down) {
-            y_velocity = 0.0f;
+            curMove.y = 0.0f;
             for (const auto& colItem : collisions.collisions) {
                 if (colItem.direction & Down) {
                     realpos.y = colItem.surface.dimensions.p1.y;
@@ -304,9 +254,9 @@ void Actor::handleGravity(float deltaTime)
                 }
             }
         } else {
-            y_velocity -= gravity_accel * deltaTime;
-            if (y_velocity < MIN_PLAYER_Y_VELOCITY) {
-                y_velocity = MIN_PLAYER_Y_VELOCITY;
+            curMove.y -= gravity_accel * deltaTime;
+            if (curMove.y < MIN_PLAYER_Y_VELOCITY) {
+                curMove.y = MIN_PLAYER_Y_VELOCITY;
             }
         }
     }
@@ -319,7 +269,7 @@ void Actor::handleGravity(float deltaTime)
 /// <param name="deltaTime">the time (in seconds) elapsed since the last frame</param>
 void Actor::draw(float deltaTime)
 {
-    const SDL_Rect &spriteRect = activeGroup.sprites[spriteGroupIndex];
+    const SDL_Rect& spriteRect = spriteProvider->getRect();
     if(collisionGeometry.x == -1.f) {
         collisionGeometry.x = float(spriteRect.x);
         collisionGeometry.y1 = spriteRect.y - 1.f;
@@ -332,13 +282,9 @@ void Actor::draw(float deltaTime)
     handleMovement(deltaTime, intentMove, curMove);
     handleJump(deltaTime);
     handleGravity(deltaTime);
-    realpos.y -= y_velocity;
-    if (state == ActorState::Running) {
-        spriteGroupIndex++;
-        if (spriteGroupIndex == activeGroup.sprites.size()) {
-            spriteGroupIndex = 0;
-        }
-    }
+    realpos.y -= curMove.y;
+    realpos.z += curMove.z;
+    realpos.x += curMove.x;
     if (visible) {
         int actualX = 0, actualY = 0;
         getPixelPosFromRealPos(realpos, actualX, actualY);

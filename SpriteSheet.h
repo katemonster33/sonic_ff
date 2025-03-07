@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <string>
+#include <memory>
+#include "Geometry.h"
 #include "ActorState.h"
 #include <SDL2/SDL_render.h>
 
@@ -20,4 +22,20 @@ struct SpriteConfig
 struct SpriteSheetConfig
 {
   std::vector<SpriteConfig> sprites;
+};
+
+class SpriteProvider
+{
+    size_t spriteGroupIndex;
+    std::unique_ptr<struct SpriteConfig> spriteConfig;
+    Rect2 spriteRect;
+    const struct SpriteGroup* activeGroup;
+public:
+    SpriteProvider(SpriteConfig* spriteConfig);
+
+    void update(ActorState currentState);
+    void draw();
+    SDL_Rect getRect() {
+        return activeGroup->sprites[spriteGroupIndex];
+    };
 };
