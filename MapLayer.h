@@ -47,7 +47,7 @@ public:
 
     bool create(const tmx::Map&, std::uint32_t index, const std::vector<std::unique_ptr<Texture>>& textures);
 
-    void draw(SDL_Renderer*) const;
+    void draw(SDL_Renderer*, int cameraX, int cameraY) const;
 
 private:
     struct Subset final

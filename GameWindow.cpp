@@ -125,6 +125,7 @@ float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
 }
 
 GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey) : 
+    camera(0, 0),
     size_x(sizex),
     size_y(sizey),
     map(map),
@@ -549,27 +550,17 @@ void GameWindow::drawFrame()
     curTime = SDL_GetTicks64();
     float frameDeltaTime = float(curTime - lastFrameTime) / 1000.f;
     SDL_RenderClear(renderer);
+    camera.x = playerActor->getWindowPos().x - (size_x / 2);
+    camera.y = playerActor->getWindowPos().y - (size_y / 2);
     for (const auto& l : renderLayers) {
-        l->draw(renderer);
+        l->draw(renderer, camera.x, camera.y);
     }
     if (playerActor != nullptr) {
-        playerActor->draw(frameDeltaTime);
+        playerActor->draw(frameDeltaTime, camera);
     }
     for (Actor* actor : actors) {
-        actor->draw(frameDeltaTime);
+        actor->draw(frameDeltaTime, camera);
     }
-    // SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    // for (const auto& geometry : get_wall_geometries()) {
-    //     SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
-    // }
-    // for (const auto& geometry : get_ground_geometries()) {
-
-    //     SDL_RenderDrawLine(renderer, geometry.mapRect.p1.x * 16, geometry.mapRect.p1.y * 16, geometry.mapRect.p2.x * 16, geometry.mapRect.p2.y * 16);
-    //     int actualX1, actualX2, actualY1, actualY2;
-    //     getPixelPosFromRealPos(geometry.dimensions.p1, actualX1, actualY1);
-    //     getPixelPosFromRealPos(geometry.dimensions.p2, actualX2, actualY2);
-    //     SDL_RenderDrawLine(renderer, actualX1, actualY1, actualX2, actualY2);
-    // }
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
 }

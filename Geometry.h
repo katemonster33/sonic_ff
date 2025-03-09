@@ -24,6 +24,12 @@ struct MoveVector
     float z;
 };
 
+struct pixelpos
+{
+    int x;
+    int y;
+};
+
 struct mappoint
 {
     unsigned int x;
@@ -87,7 +93,7 @@ CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2);
 bool line_intersects(float l1x1, float l1x2, float l2x1, float l2x2);
 bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, float rw, float rh);
 
-void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY);
+void getPixelPosFromRealPos(const tripoint &realpos, pixelpos &pixPos);
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);
 void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, float z);
 

@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
             gameWindow->handle_input(event);
         }
         gameWindow->drawFrame();
-        SDL_Delay(16);
+        SDL_Delay(10);
     }
     delete gameWindow;
     return 0;

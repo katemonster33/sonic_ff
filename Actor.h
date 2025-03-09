@@ -7,11 +7,11 @@
 #include "Geometry.h"
 #include "GameWindow.h"
 
-const float MAX_PLAYER_X_VELOCITY = 5.0f;
+const float MAX_PLAYER_X_VELOCITY = 1.0f;
 const float MIN_PLAYER_Y_VELOCITY = -5.f;
 const float MAX_PLAYER_JUMP_VELOCITY = 0.5f;
-const float MAX_PLAYER_Z_VELOCITY = 2.0f;
-const float PLAYER_RUN_ACCEL = 5.0f; // 5 m/s^2
+const float MAX_PLAYER_Z_VELOCITY = 2.f;
+const float PLAYER_RUN_ACCEL = 0.5f; // 5 m/s^2
 const float DEFAULT_JUMP_TIME = 0.15f;
 
 class Actor
@@ -27,6 +27,7 @@ class Actor
     MoveVector curMove;
     std::unique_ptr<class Texture> texture;
     std::unique_ptr<class SpriteProvider> spriteProvider;
+    pixelpos windowPos;
 protected:
     MoveVector intentMove;
 	ActorState state;
@@ -43,7 +44,11 @@ public:
 
 	ActorState GetState() { return state; }
     const CollisionData& getCollisions() { return collisions; }
-    void draw(float deltaTime);
+    void draw(float deltaTime, const pixelpos& camera);
+
+    const tripoint &getRealPos() const { return realpos; } 
+
+    const pixelpos &getWindowPos() const { return windowPos;}
 };
 
 class PlayerActor : public Actor

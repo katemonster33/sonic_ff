@@ -184,12 +184,26 @@ void Actor::handleMovement(float deltaTime, const MoveVector &intent, MoveVector
 
         // 0,1;90,0;180,-1;270;0,360,1
 
+        float vDelta = PLAYER_RUN_ACCEL * deltaTime;
         float zDelta = intent.z - current.z;
         float xDelta = intent.x - current.x;
-        float zxDelta = fabs(xDelta) + fabs(zDelta);
-        float vDelta = PLAYER_RUN_ACCEL * deltaTime;
-        curMove.x += xDelta / zxDelta * vDelta;
-        curMove.z += zDelta / zxDelta * vDelta;
+        if(zDelta == 0.f)
+        {
+            curMove.x += xDelta < 0? -vDelta : vDelta;
+        } else if(xDelta == 0.f) {
+            curMove.z += zDelta < 0? -vDelta : vDelta;
+        } else {
+            curMove.x += 0.5f * (xDelta < 0? -vDelta : vDelta);
+            curMove.z += 0.5f * (zDelta < 0? -vDelta : vDelta);
+        }
+        if((curMove.x > 0.f && intent.x <= 0.f) || 
+            (curMove.x < 0.f && intent.x >= 0.f)){
+            curMove.x += (xDelta < 0 ? -vDelta : vDelta);
+        }
+        if((curMove.z > 0.f && intent.z <= 0.f) || 
+            (curMove.z < 0.f && intent.z >= 0.f)){
+            curMove.z += (zDelta < 0 ? -vDelta : vDelta);
+        }
         if ((xDelta < 0 && curMove.x < intent.x) ||
             (xDelta > 0 && curMove.x > intent.x)) {
             curMove.x = intent.x;
@@ -267,7 +281,7 @@ void Actor::handleGravity(float deltaTime)
 /// </summary>
 /// <param name="parentWindow">the window this actor belongs to</param>
 /// <param name="deltaTime">the time (in seconds) elapsed since the last frame</param>
-void Actor::draw(float deltaTime)
+void Actor::draw(float deltaTime, const pixelpos& camera)
 {
     const SDL_Rect& spriteRect = spriteProvider->getRect();
     if(collisionGeometry.x == -1.f) {
@@ -286,8 +300,7 @@ void Actor::draw(float deltaTime)
     realpos.z += curMove.z;
     realpos.x += curMove.x;
     if (visible) {
-        int actualX = 0, actualY = 0;
-        getPixelPosFromRealPos(realpos, actualX, actualY);
-        texture->draw(spriteRect.x, spriteRect.y, int(actualX), int(actualY), spriteRect.w, spriteRect.h);
+        getPixelPosFromRealPos(realpos, windowPos);
+        texture->draw(spriteRect.x, spriteRect.y, windowPos.x - camera.x, windowPos.y - camera.y, spriteRect.w, spriteRect.h);
     }
 }

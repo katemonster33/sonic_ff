@@ -61,6 +61,7 @@ struct CollisionData
 
 class GameWindow
 {
+    pixelpos camera;
     mappoint z0pos;
     std::vector<SurfaceData> surfaces;
     float getZLevelAtPoint(const mappoint &mt, TileLayerId layer = TileLayerId::Any);

@@ -146,10 +146,10 @@ CollisionType get_collision(const cylinder& cyl1, const cylinder& cyl2)
    return (CollisionType)cType;
 }
 
-void getPixelPosFromRealPos(const tripoint &realpos, int &pixelX, int &pixelY)
+void getPixelPosFromRealPos(const tripoint &realpos, pixelpos &pixPos)
 {
-    pixelX = int((realpos.x + realpos.z / c_x_ratio) * 16);
-    pixelY = int((realpos.z + realpos.y) * 16);
+    pixPos.x = int((realpos.x + realpos.z / c_x_ratio) * 16);
+    pixPos.y = int((realpos.z + realpos.y) * 16);
 }
 
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos)

@@ -156,11 +156,14 @@ bool MapLayer::create(const tmx::Map& map, std::uint32_t layerIndex, const std::
     return true;
 }
 
-void MapLayer::draw(SDL_Renderer* renderer) const
+void MapLayer::draw(SDL_Renderer* renderer, int cameraX, int cameraY) const
 {
     assert(renderer);
-    for (const auto& s : m_subsets)
-    {
-        SDL_RenderGeometry(renderer, s.texture, s.vertexData.data(), static_cast<std::int32_t>(s.vertexData.size()), nullptr, 0);
+    for(const auto& subset : m_subsets) {
+        std::vector<SDL_Vertex> vertsCpy;
+        for(const auto& vertex: subset.vertexData) {
+            vertsCpy.push_back({ {vertex.position.x - cameraX, vertex.position.y - cameraY}, vertex.color, vertex.tex_coord });
+        }
+        SDL_RenderGeometry(renderer, subset.texture, vertsCpy.data(), static_cast<std::int32_t>(vertsCpy.size()), nullptr, 0);
     }
 }
