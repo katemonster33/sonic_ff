@@ -96,5 +96,3 @@ bool circle_intersects_rect(float cx, float cy, float cr, float rx1, float ry1, 
 void getPixelPosFromRealPos(const tripoint &realpos, pixelpos &pixPos);
 void getMapPosFromRealPos(const tripoint &realpos, mappoint &mappos);
 void getRealPosFromMapPos(const mappoint &mappos, tripoint &realpoint, float z);
-
-void modifyVelocityFromTurn(const MoveVector& intentVec, MoveVector& curVec, float deltaVelocity);

@@ -6,7 +6,6 @@
 #include "MapLayer.h"
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
-#include <cjson/cJSON.h>
 #include <iostream>
 #include <fstream>
 
@@ -124,17 +123,17 @@ float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
     return -1;
 }
 
-GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, size_t sizex, size_t sizey) : 
-    camera(0, 0),
-    size_x(sizex),
-    size_y(sizey),
+GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, pixelpos size) : 
+    camera{ 0, 0 },
+    size(size),
     map(map),
     curTime(0),
     lastFrameTime(0),
-    z0pos({0, 0}),
+    z0pos{ 0, 0 },
     mapSize(map.getTileCount()),
     window(window),
-    renderer(renderer)
+    renderer(renderer),
+    tilesetConfig(TilesetConfig::Create(std::string("assets/") + map.getTilesets()[0].getName() + ".json"))
 {
     //load the textures as they're shared between layers
     const auto& tileSets = map.getTilesets();
@@ -145,7 +144,6 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             textures.emplace_back(text);
         }
     }
-
     //load the layers
     const auto& mapLayers = map.getLayers();
     for (auto i = 0u; i < mapLayers.size(); ++i) {
@@ -154,7 +152,6 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             renderLayers.back()->create(map, i, textures); //just cos we're using C++14
         }
     }
-    readJsonTileData();
     auto bgLayer = getLayerByName("Background");
     const auto& mapSize = map.getTileCount();
     std::vector<SurfaceData> miscSurfaces;
@@ -255,70 +252,6 @@ GameWindow::~GameWindow()
     SDL_Quit();
 }
 
-size_t getFileLength(std::ifstream &file)
-{
-    file.seekg(0, std::ios::end);
-    size_t length = file.tellg();
-    file.seekg(0, std::ios::beg);
-    return length;
-}
-
-bool GameWindow::readJsonTileData()
-{
-    std::string fileName = map.getTilesets()[0].getImagePath();
-    std::ifstream jsonFile("assets/robotropolis-sheet.json", std::ios::in);
-    assert(jsonFile.is_open());
-
-    size_t len = getFileLength(jsonFile);
-    char *fileData = new char[len];
-    jsonFile.read(fileData, len);
-    jsonFile.close();
-
-    cJSON *json = cJSON_Parse(fileData);
-    delete[] fileData;
-    assert(json != nullptr && json->child != nullptr);
-
-    for (cJSON* childJson = json->child; childJson != nullptr; childJson = childJson->next) {
-        if (strcmp(childJson->string, "predefinedBasicTiles") == 0) {
-                
-            for (cJSON* predefinedTileObj = childJson->child; predefinedTileObj != nullptr; predefinedTileObj = predefinedTileObj->next) {
-                TileType typeToSet = TileType::None;
-                if (strcmp(predefinedTileObj->string, "wall") == 0) {
-                    typeToSet = TileType::Wall;
-                } else if (strcmp(predefinedTileObj->string, "sideWall") == 0) {
-                    typeToSet = TileType::SideWall;
-                } else if (strcmp(predefinedTileObj->string, "ground") == 0) {
-                    typeToSet = TileType::Ground;
-                } else if (strcmp(predefinedTileObj->string, "box") == 0) {
-                    typeToSet = TileType::Box;
-                }
-                for (cJSON* tileIds = predefinedTileObj->child; tileIds != nullptr; tileIds = tileIds->next) {
-                    mapTileData[tileIds->valueint] = typeToSet;
-                }
-            }
-        } else if (strcmp(childJson->string, "predefinedAngledTiles") == 0) {
-            for (cJSON* predefinedTileObj = childJson->child; predefinedTileObj != nullptr; predefinedTileObj = predefinedTileObj->next) {
-                std::vector<TileType> tileTypes;
-                if (strcmp(predefinedTileObj->string, "angledSideWall") == 0) {
-                    tileTypes = { TileType::SideWallAngled1, TileType::SideWallAngled2, TileType::SideWallAngled3, TileType::SideWallAngled4 };
-                } else if (strcmp(predefinedTileObj->string, "angledGround") == 0) {
-                    tileTypes = { TileType::GroundAngled1, TileType::GroundAngled2, TileType::GroundAngled3, TileType::GroundAngled4 };
-                }
-                for (cJSON* tileIdArrays = predefinedTileObj->child; tileIdArrays != nullptr; tileIdArrays = tileIdArrays->next) {
-                    auto tileType = tileTypes.begin();
-                    for (cJSON* tileId = tileIdArrays->child; tileId != nullptr && tileType != tileTypes.end(); tileId = tileId->next, tileType++) {
-                        mapTileData[tileId->valueint] = *tileType;
-                    }
-                }
-            }
-        } else if (strcmp(childJson->string, "customTiles") == 0) {
-
-        }
-    }
-    cJSON_Delete(json);
-    return true;
-}
-
 TileType GameWindow::getTileType(const mappoint &mt, const tmx::TileLayer &layer)
 {
     int tileId = layer.getTiles()[mapSize.x * mt.y + mt.x].ID;
@@ -330,12 +263,7 @@ TileType GameWindow::getTileType(const mappoint &mt, const tmx::TileLayer &layer
     if(tileId >= fgid && tileId <= lgid) {
         tileId -= fgid;
     }
-    TileType tileType = TileType::None;
-    std::unordered_map<int, TileType>::iterator it = mapTileData.find(tileId);
-    if(it != mapTileData.end()) {
-        tileType = it->second;
-    }
-    return tileType;
+    return tilesetConfig->getTileType(tileId);
 }
 
 tmx::TileLayer *GameWindow::getLayerByName(const char *name)
@@ -535,7 +463,7 @@ GameWindow *GameWindow::Create()
         SDL_DestroyWindow(window);
         return nullptr;
     }
-    return new GameWindow(window, renderer, map, 852, 480);
+    return new GameWindow(window, renderer, map, { 852, 480 });
 }
 
 void GameWindow::handle_input(const SDL_Event& event)
@@ -550,8 +478,8 @@ void GameWindow::drawFrame()
     curTime = SDL_GetTicks64();
     float frameDeltaTime = float(curTime - lastFrameTime) / 1000.f;
     SDL_RenderClear(renderer);
-    camera.x = playerActor->getWindowPos().x - (size_x / 2);
-    camera.y = playerActor->getWindowPos().y - (size_y / 2);
+    camera.x = playerActor->getWindowPos().x - (size.x / 2);
+    camera.y = playerActor->getWindowPos().y - (size.y / 2);
     for (const auto& l : renderLayers) {
         l->draw(renderer, camera.x, camera.y);
     }
