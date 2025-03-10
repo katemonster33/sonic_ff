@@ -31,5 +31,18 @@
       "bounds": [ 0, 0, 0, 0 ],
       "tileType" : "enemy"
     }
+  },
+  "customObjects" : {
+    "pipeLedge" : {
+      "tileIds" : [
+        [214, 215, 216, 217],
+        [230, 231, 232, 233]
+      ]
+    },
+    "bounds" : {
+      "p1" : { "x" : 0.0, "y" : 0.0, "z" : 0.0 },
+      "p2" : { "x" : 4.0, "y" : 1.0, "z" : 1.0 }
+    },
+    "type" : "obstacle"
   }
 }
