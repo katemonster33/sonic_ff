@@ -1,6 +1,7 @@
 #include "TilesetConfig.h"
 #include <cjson/cJSON.h>
 #include <fstream>
+#include <cstring>
 
 TileType TilesetConfig::getTileType(int tileId)
 {
@@ -86,11 +87,9 @@ TilesetConfig::TilesetConfig(cJSON *json)
                     }
                 }
             }
-        }
-        else if (strcmp(childJson->string, "customTiles") == 0) {
+        } else if (strcmp(childJson->string, "customTiles") == 0) {
 
-        }
-        else if (strcmp(childJson->string, "customObjects")) {
+        } else if (strcmp(childJson->string, "customObjects")) {
             for (cJSON* customObj = childJson->child; customObj != nullptr; customObj = customObj->next) {
                 char* tileName = customObj->string;
                 CustomTileObject cto;

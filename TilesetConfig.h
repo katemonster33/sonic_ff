@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <string>
+#include <vector>
 #include "Geometry.h"
 
 enum class TileType
