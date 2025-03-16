@@ -8,7 +8,7 @@
 #include "TilesetConfig.h"
 #include <functional>
 
-const float gravity_accel = 4.f;//9.8f; // 9.8 m/s^2
+const float gravity_accel = 40.f;//9.8f; // 9.8 m/s^2
 
 namespace tmx
 {

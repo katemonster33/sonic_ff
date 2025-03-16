@@ -7,12 +7,12 @@
 #include "Geometry.h"
 #include "GameWindow.h"
 
-const float MAX_PLAYER_X_VELOCITY = 1.0f;
-const float MIN_PLAYER_Y_VELOCITY = -5.f;
-const float MAX_PLAYER_JUMP_VELOCITY = 1.5f;
-const float MAX_PLAYER_Z_VELOCITY = 2.f;
-const float PLAYER_RUN_ACCEL = 0.5f; // 5 m/s^2
-const float DEFAULT_JUMP_TIME = 0.15f;
+const float MAX_PLAYER_X_VELOCITY = 10.0f;
+const float MIN_PLAYER_Y_VELOCITY = -40.f;
+const float MAX_PLAYER_JUMP_VELOCITY = 10.f;
+//const float MAX_PLAYER_Z_VELOCITY = 2.f;
+const float PLAYER_RUN_ACCEL = 5.f; // 5 m/s^2
+const float DEFAULT_JUMP_TIME = 0.5f;
 
 class Actor
 {

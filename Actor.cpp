@@ -245,14 +245,13 @@ void Actor::handleCollisions()
 
 void Actor::handleJump(float deltaTime)
 {
-    if (intentMove.y != 0.f && state != ActorState::Hurt ) {
-        if(jumpEndTime == -1.f && state != ActorState::Jumping && getCollisions().directions & Down) {
+        if(jumpEndTime == -1.f && intentMove.y != 0.f && state != ActorState::Hurt && state != ActorState::Jumping && getCollisions().directions & Down) {
             state = ActorState::Jumping;
             curMove.y = intentMove.y;
             jumpEndTime = maxJumpTime;
-        } else {
+        } else if(jumpEndTime != -1.f) {
             jumpEndTime -= deltaTime;
-            if (jumpEndTime <= 0) {
+            if (jumpEndTime <= 0 || intentMove.y == 0.f) {
                 jumpEndTime = -1.f;
                 intentMove.y = 0.f;
                 state = ActorState::Default;
@@ -262,12 +261,11 @@ void Actor::handleJump(float deltaTime)
             jumpEndTime = -1.f;
             state = ActorState::Default;
         }
-    }
 }
 
 void Actor::handleGravity(float deltaTime)
 {
-    if (intentMove.y == 0.f) {
+    if (jumpEndTime == -1.f) {
         if (collisions.directions & Down) {
             curMove.y = 0.0f;
             for (const auto& colItem : collisions.collisions) {
@@ -305,9 +303,9 @@ void Actor::draw(float deltaTime, const pixelpos& camera)
     handleMovement(deltaTime, intentMove, curMove);
     handleJump(deltaTime);
     handleGravity(deltaTime);
-    realpos.y -= curMove.y;
-    realpos.z += curMove.z;
-    realpos.x += curMove.x;
+    realpos.y -= (curMove.y * deltaTime);
+    realpos.z += (curMove.z * deltaTime);
+    realpos.x += (curMove.x * deltaTime);
     if (visible) {
         getPixelPosFromRealPos(realpos, windowPos);
         texture->draw(spriteRect.x, spriteRect.y, windowPos.x - camera.x, windowPos.y - camera.y, spriteRect.w, spriteRect.h);

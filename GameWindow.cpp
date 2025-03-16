@@ -517,24 +517,31 @@ void drawLine(SDL_Renderer* renderer, const pixelpos& camera, const tripoint &p1
     getPixelPosFromRealPos(p1, pp1);
     getPixelPosFromRealPos(p2, pp2);
     SDL_RenderDrawLine(renderer, pp1.x - camera.x, pp1.y - camera.y, pp2.x - camera.x, pp2.y - camera.y);
+    
+}
+
+void drawRect(SDL_Renderer* renderer, const pixelpos& camera, const tripoint& p1, const tripoint& p2)
+{
+    pixelpos pp1, pp2;
+    getPixelPosFromRealPos(p1, pp1);
+    getPixelPosFromRealPos(p2, pp2);
+    SDL_Rect rect{pp1.x - camera.x, pp1.y - camera.y, pp2.x - pp1.x, pp2.y - pp1.y};
+    SDL_RenderDrawRect(renderer, &rect);
 }
 
 void drawCuboid(SDL_Renderer* renderer, const pixelpos& camera, const tripoint &p1, const tripoint &p2)
 {
-    drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p2.x, p1.y, p1.z});
-    drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p1.x, p2.y, p1.z});
-    drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p2.x, p1.y, p1.z});
-    drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p1.x, p2.y, p1.z});
+    // rectangle representing the rear side
+    drawRect(renderer, camera, p1, {p2.x, p2.y, p1.z});
 
+    // rectangle representing the front  side
+    drawRect(renderer, camera, {p1.x, p1.y, p2.z}, p2);
+
+    // lines connecting front side to rear side
     drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p1.x, p1.y, p2.z});
     drawLine(renderer, camera, {p2.x, p1.y, p1.z}, {p2.x, p1.y, p2.z});
     drawLine(renderer, camera, {p1.x, p2.y, p1.z}, {p1.x, p2.y, p2.z});
     drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p2.x, p2.y, p2.z});
-
-    drawLine(renderer, camera, {p1.x, p1.y, p2.z}, {p2.x, p1.y, p2.z});
-    drawLine(renderer, camera, {p1.x, p1.y, p2.z}, {p1.x, p2.y, p2.z});
-    drawLine(renderer, camera, {p2.x, p2.y, p2.z}, {p2.x, p1.y, p2.z});
-    drawLine(renderer, camera, {p2.x, p2.y, p2.z}, {p1.x, p2.y, p2.z});
 }
 
 void GameWindow::drawFrame()
@@ -568,7 +575,6 @@ void GameWindow::drawFrame()
     lastFrameTime = curTime;
 }
 
-cylinder collisionCylCpy;
 const CollisionData GameWindow::check_collision(const cylinder& collisionCyl)
 {
     CollisionData collisions;
