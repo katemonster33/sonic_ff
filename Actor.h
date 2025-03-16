@@ -39,7 +39,7 @@ protected:
     void handleJump(float deltaTime);
 
 public:
-	Actor( GameWindow& parentWindow, struct SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt);
+	Actor( GameWindow& parentWindow, struct SpriteConfig& spriteConfig, Texture* texture, const mappoint &mt);
     virtual ~Actor();
 
 	ActorState GetState() { return state; }
@@ -48,7 +48,9 @@ public:
 
     const tripoint &getRealPos() const { return realpos; } 
 
-    const pixelpos &getWindowPos() const { return windowPos;}
+    const cylinder &getCollisionGeometry() const { return collisionGeomCurrent; }
+
+    const pixelpos &getWindowPos() const { return windowPos; }
 };
 
 class PlayerActor : public Actor
@@ -62,7 +64,7 @@ class PlayerActor : public Actor
     int getIntentFromKey(SDL_Keycode keyCode);
 
 public:
-    PlayerActor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint& mt);
+    PlayerActor(GameWindow& parentWindow, SpriteConfig& spriteConfig, Texture* texture, const mappoint& mt);
     ~PlayerActor();
 
     void handle_input(const SDL_Event& event);

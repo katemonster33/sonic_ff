@@ -18,7 +18,6 @@ int main(int argc, char** argv) {
     }
     bool game_open = true;
     SDL_Event event;
-    SDL_SetRenderDrawColor(gameWindow->getRenderer(), 100, 149, 237, 255);
     while (game_open)
     {
         while (SDL_PollEvent(&event) > 0)

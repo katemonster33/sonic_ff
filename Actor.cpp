@@ -5,7 +5,7 @@
 #include "Texture.h"
 #include <cassert>
 
-Actor::Actor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint &mt) :
+Actor::Actor(GameWindow& parentWindow, SpriteConfig& spriteConfig, Texture* texture, const mappoint &mt) :
     spriteProvider(std::make_unique<SpriteProvider>(spriteConfig)),
     texture(texture),
     parentWindow(parentWindow),
@@ -27,7 +27,7 @@ Actor::~Actor()
 {
 }
 
-PlayerActor::PlayerActor(GameWindow& parentWindow, SpriteConfig* spriteConfig, Texture* texture, const mappoint& mt) : 
+PlayerActor::PlayerActor(GameWindow& parentWindow, SpriteConfig& spriteConfig, Texture* texture, const mappoint& mt) : 
     Actor(parentWindow, spriteConfig, texture, mt),
     intentKeys(NoIntent),
     intentMoveKeys(MKeyNone)
@@ -81,7 +81,7 @@ int PlayerActor::getIntentFromKey(SDL_Keycode keyCode)
     {
         case SDLK_UP:
         case SDLK_w:
-        case SDLK_DOWN:
+        case SDLK_DOWN:  
         case SDLK_s:
         case SDLK_LEFT:
         case SDLK_a:
@@ -148,6 +148,15 @@ void PlayerActor::handle_input(const SDL_Event& event)
     case SDL_KEYUP:
         intentMoveKeys &= ~getMovementTypeFromKey(event.key.keysym.sym);
         intentKeys &= ~getIntentFromKey(event.key.keysym.sym);
+        break;
+    case SDL_WINDOWEVENT:
+        switch(event.window.type)
+        {
+            case SDL_WindowEventID::SDL_WINDOWEVENT_FOCUS_LOST:
+                intentMove.x = intentMove.y = intentMove.z = 0.f;
+                intentKeys = NoIntent;
+                break;
+        }
         break;
     }
     if(lastMoveKeys != intentMoveKeys) {
@@ -219,7 +228,7 @@ void Actor::handleMovement(float deltaTime, const MoveVector &intent, MoveVector
         }
         if ((colData.directions & Front && curMove.z > 0.f) ||
             (colData.directions & Back && curMove.z < 0.f)) {
-            curMove.z = 0.f;
+            curMove.z = 0.f; 
         }
     }
 }

@@ -86,7 +86,7 @@ bool GameWindow::any_surface_intersects(TileLayerId surfaceType, const mappoint&
 
 tripoint GameWindow::getTripointAtMapPoint(const mappoint& mt)
 {
-    float zlevel = getZLevelAtPoint(mt);
+    float zlevel = getZLevelAtAdjacentPoint(mt);
     tripoint output{ -1.f, -1.f, -1.f };
     if (zlevel != -1) {
         getRealPosFromMapPos(mt, output, zlevel);
@@ -94,7 +94,7 @@ tripoint GameWindow::getTripointAtMapPoint(const mappoint& mt)
     return output;
 }
 
-float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
+float GameWindow::getZLevelAtAdjacentPoint(const mappoint& mt, TileLayerId layer)
 {
     if (layer == TileLayerId::Ground || layer == TileLayerId::Any) {
         for (const SurfaceData& groundSurface : surfaces) {
@@ -107,7 +107,7 @@ float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
         if (surface.layer != TileLayerId::Ground && (surface.layer == layer || layer == TileLayerId::Any)) {
             if (surface.mapRect.intersects(mappoint{ mt.x, mt.y - 1 })) {
                 if (surface.dimensions.p2.z > (surface.dimensions.p1.z + 1)) {
-                    return (float(mt.x) - surface.mapRect.p1.x) / 2;
+                    return (float(mt.x) - surface.mapRect.p1.x) * 2;
                 } else {
                     return  surface.dimensions.p2.z;
                 }
@@ -123,6 +123,48 @@ float GameWindow::getZLevelAtPoint(const mappoint& mt, TileLayerId layer)
     return -1;
 }
 
+float GameWindow::getZLevelAtPoint(const mappoint &mt, TileLayerId layer)
+{
+    if (layer == TileLayerId::Ground || layer == TileLayerId::Any) {
+        for (const SurfaceData& groundSurface : surfaces) {
+            if (groundSurface.layer == TileLayerId::Ground && groundSurface.mapRect.intersects(mappoint{ mt.x, mt.y - 1 })) {
+                return groundSurface.dimensions.p1.z + (mt.y - groundSurface.mapRect.p1.y);
+            }
+        }
+    }
+    for(const auto &surface : surfaces) {
+        if (surface.layer != TileLayerId::Ground && (surface.layer == layer || layer == TileLayerId::Any)) {
+            if (surface.mapRect.intersects(mappoint{ mt.x, mt.y })) {
+                if (surface.dimensions.p2.z > (surface.dimensions.p1.z + 1)) {
+                    return (float(mt.x) - surface.mapRect.p1.x) * 2;
+                } else {
+                    return  surface.dimensions.p2.z;
+                }
+            } 
+        }
+    }
+    return -1;
+}
+
+void GameWindow::parseLayerSurfaces(const char *layerName, TileLayerId layerId, std::function<bool (const tmx::TileLayer&, mappoint&, SurfaceData& surface)> parseFunc)
+{
+    auto layer = getLayerByName(layerName);
+    if(layer != nullptr) {
+        const auto& layerSize = layer->getSize();
+        float currentZ = 0;
+        mappoint mt{ 0, 0 };
+        SurfaceData surfaceData;
+        surfaceData.layer = layerId;
+        for (; mt.x < layerSize.x; ++mt.x) {
+            for (mt.y = 0; mt.y < layerSize.y; ++mt.y) {
+                if(parseFunc(*layer, mt, surfaceData)){
+                    surfaces.push_back(surfaceData);
+                }
+            }
+        }
+    }
+}
+
 GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map, pixelpos size) : 
     camera{ 0, 0 },
     size(size),
@@ -130,6 +172,7 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
     curTime(0),
     lastFrameTime(0),
     z0pos{ 0, 0 },
+    bounds{ {0.f, 0.f, 0.f}, {0.f, 0.f, 0.f} },
     mapSize(map.getTileCount()),
     window(window),
     renderer(renderer),
@@ -152,96 +195,80 @@ GameWindow::GameWindow(SDL_Window *window, SDL_Renderer *renderer, tmx::Map& map
             renderLayers.back()->create(map, i, textures); //just cos we're using C++14
         }
     }
-    auto bgLayer = getLayerByName("Background");
-    const auto& mapSize = map.getTileCount();
-    std::vector<SurfaceData> miscSurfaces;
-    if(bgLayer != nullptr) {
-        float currentZ = 0;
-        mappoint mt{ 0, 0 };
-        for (; mt.x < mapSize.x; ++mt.x) {
-            for (mt.y = 0; mt.y < mapSize.y; ++mt.y) {
-                TileType bgTileType = getTileType(mt, *bgLayer);
-                if(bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) {
-                    SurfaceData wallSurface;
-                    wallSurface.layer = TileLayerId::BackgroundWall;
-                    bool traceSuccess = false;
-                    if(bgTileType == TileType::Wall) {
-                        traceSuccess = traceWallTiles(mt, *bgLayer, currentZ, wallSurface);
-                    } else {
-                        traceSuccess = traceSideWallTiles(mt, *bgLayer, currentZ, wallSurface);
-                        currentZ = wallSurface.dimensions.p2.z;
-                    }
-                    if (traceSuccess) {
-                        surfaces.push_back(wallSurface);
-                        mt.x = wallSurface.mapRect.p2.x - 1;
-                        break;
-                    }
+    float currentZ = 0.f;
+    parseLayerSurfaces("Background", TileLayerId::BackgroundWall, [this, &currentZ](const tmx::TileLayer &layer, mappoint &mt, SurfaceData &surface) {
+        TileType bgTileType = getTileType(mt, layer);
+        bool traceSuccess = false;
+        if(bgTileType == TileType::Wall) {
+            traceSuccess = traceWallTiles(mt, layer, currentZ, surface);
+        } else if(bgTileType == TileType::SideWallAngled1) {
+            traceSuccess = traceSideWallTiles(mt, layer, currentZ, surface);
+            currentZ = surface.dimensions.p2.z;
+        }
+        if(traceSuccess) {
+            mt.x = surface.mapRect.p2.x - 1;
+            mt.y = surface.mapRect.p2.y - 1;
+        }
+        return traceSuccess;
+    });
+    parseLayerSurfaces("walls", TileLayerId::ForegroundWall, [this](const tmx::TileLayer &layer, mappoint &mt, SurfaceData &surface) {
+        bool parseSuccess = false;
+        TileType bgTileType = getTileType(mt, layer);
+        if((bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) && !any_surface_intersects(TileLayerId::ForegroundWall, mt)) {
+            float zOffset = 0;
+            if(bgTileType == TileType::Wall) {
+                zOffset = getZLevelAtAdjacentPoint({ mt.x, mt.y }, TileLayerId::ForegroundWall);
+                if(zOffset == -1) {
+                    zOffset = getZLevelAtPoint({ mt.x, mt.y }, TileLayerId::BackgroundWall);
                 }
+                parseSuccess = traceWallTiles(mt, layer, zOffset, surface);
+            } else {
+                zOffset = getZLevelAtPoint({ mt.x - 1, mt.y }, TileLayerId::BackgroundWall);
+                parseSuccess = traceSideWallTiles(mt, layer, zOffset, surface);
             }
         }
-    }
-    auto fgWallLayer = getLayerByName("walls");
-    if(fgWallLayer != nullptr) {
-        mappoint mt{ 0, 0 };
-        for(; mt.x < mapSize.x; mt.x++) {
-            for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
-                TileType bgTileType = getTileType(mt, *fgWallLayer);
-                if(bgTileType == TileType::Wall || bgTileType == TileType::SideWallAngled1) {
-                    SurfaceData wallSurface;
-                    wallSurface.layer = TileLayerId::ForegroundWall;
-                    bool parseSuccess = false;
-                    float zOffset = 0;
-                    if(bgTileType == TileType::Wall) {
-                        zOffset = getZLevelAtPoint({ mt.x, mt.y }, TileLayerId::ForegroundWall);
-                        parseSuccess = traceWallTiles(mt, *fgWallLayer, zOffset, wallSurface);
-                    } else {
-                        zOffset = getZLevelAtPoint({ mt.x - 1, mt.y }, TileLayerId::BackgroundWall);
-                        parseSuccess = traceSideWallTiles(mt, *fgWallLayer, zOffset, wallSurface);
-                    }
-                    if (parseSuccess) {
-                        surfaces.push_back(wallSurface);
-                        mt.x = wallSurface.mapRect.p2.x;
-                        break;
-                    }
-                }
-            }
+        return parseSuccess;
+    });
+    parseLayerSurfaces("Foreground", TileLayerId::Ground, [this](const tmx::TileLayer &layer, mappoint &mt, SurfaceData &surface) {
+        TileType fgTileType = getTileType(mt, layer);
+        if(isGroundTile(fgTileType) && !any_surface_intersects(TileLayerId::Ground, mt)) {
+            float currentZ = getZLevelAtAdjacentPoint(mt);
+            traceGroundTiles(mt, layer, currentZ, surface);
+            return true;
         }
-    }
-    auto fgLayer = getLayerByName("Foreground");
-    if(fgLayer != nullptr) {
-        mappoint mt{ 0, 0 };
-        for(; mt.x < mapSize.x; mt.x++) {
-            for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
-                TileType fgTileType = getTileType(mt, *fgLayer);
-                if(isGroundTile(fgTileType) && !any_surface_intersects(TileLayerId::Ground, mt)) {
-                    float currentZ = getZLevelAtPoint(mt);
-                    SurfaceData fgSurface;
-                    fgSurface.layer = TileLayerId::Ground;
-                    traceGroundTiles(mt, *fgLayer, currentZ, fgSurface);
-                    surfaces.push_back(fgSurface);
-                }
-            }
+        return false;
+    });
+    parseLayerSurfaces("collidables", TileLayerId::Obstacle, [this](const tmx::TileLayer &layer, mappoint &mt, SurfaceData &surface) {
+        TileType fgTileType = getTileType(mt, layer);
+        if(fgTileType == TileType::Box && !any_surface_intersects(TileLayerId::Obstacle, mt)) {
+            float currentZ = getZLevelAtPoint(mt);
+            traceBoxTiles(mt, layer, currentZ, surface);
+            return true;
         }
-    }
-    auto collLayer = getLayerByName("collidables");
-    if(collLayer != nullptr) {
-        mappoint mt{ 0, 0 };
-        for(; mt.x < mapSize.x; mt.x++) {
-            for(mt.y = 0; mt.y < mapSize.y; mt.y++) {
-                TileType fgTileType = getTileType(mt, *collLayer);
-                if(fgTileType == TileType::Box && !any_surface_intersects(TileLayerId::Obstacle, mt)) {
-                    float currentZ = getZLevelAtPoint(mt);
-                    SurfaceData fgSurface;
-                    fgSurface.layer = TileLayerId::Obstacle;
-                    traceBoxTiles(mt, *collLayer, currentZ, fgSurface);
-                    surfaces.push_back(fgSurface);
-                }
-            }
-        }
-    }
+        return false;
+    });
     z0pos = { surfaces[0].mapRect.p1.x, surfaces[0].mapRect.p1.y };
-
-    playerActor = new PlayerActor(*this, &sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), { 13, 11 });
+    for(const auto &surface : surfaces) {
+        if(surface.dimensions.p1.x < bounds.p1.x) {
+            bounds.p1.x = surface.dimensions.p1.x;
+        }
+        if(surface.dimensions.p1.y < bounds.p1.y) {
+            bounds.p1.y = surface.dimensions.p1.y;
+        }
+        if(surface.dimensions.p1.z < bounds.p1.z) {
+            bounds.p1.z = surface.dimensions.p1.z;
+        }
+        if(surface.dimensions.p2.x > bounds.p2.x) {
+            bounds.p2.x = surface.dimensions.p2.x;
+        }
+        if(surface.dimensions.p2.y > bounds.p2.y) {
+            bounds.p2.y = surface.dimensions.p2.y;
+        }
+        if(surface.dimensions.p2.z > bounds.p2.z) {
+            bounds.p2.z = surface.dimensions.p2.z;
+        }
+    }
+    playerActor.reset(new PlayerActor(*this, sonicSpriteCfg, Texture::Create(renderer, "assets/images/sonic3.png"), { 13, 11 }));
 }
 
 GameWindow::~GameWindow()
@@ -280,7 +307,7 @@ tmx::TileLayer *GameWindow::getLayerByName(const char *name)
     return nullptr;
 }
 
-bool GameWindow::getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer)
+bool GameWindow::getNextSideGroundTile(mappoint& mt, const tmx::TileLayer& layer)
 {
     TileType tileTmp = getTileType(mt, layer);
     if (tileTmp == TileType::GroundAngled2 || tileTmp == TileType::GroundAngled4) {
@@ -295,7 +322,7 @@ bool GameWindow::getNextSideGroundTile(mappoint& mt, tmx::TileLayer& layer)
     }
 }
 
-bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
+bool GameWindow::traceBoxTiles(const mappoint& mt, const tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
@@ -324,7 +351,7 @@ bool GameWindow::traceBoxTiles(const mappoint& mt, tmx::TileLayer &layer, float 
     return true;
 }
 
-bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
+bool GameWindow::traceGroundTiles(const mappoint& mt, const tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     surface.layer = TileLayerId::Ground;
     TileType lastTileType = TileType::None;
@@ -350,18 +377,21 @@ bool GameWindow::traceGroundTiles(const mappoint& mt, tmx::TileLayer &layer, flo
         std::cout << "Bad map! Did not parse a single row of ground tiles! [" << surface.mapRect.p2.x << "," << surface.mapRect.p2.y << "]" << std::endl;
         return false;
     }
+    if(getTileType({rightTile.x, rightTile.y - 1}, layer) == TileType::GroundAngled3) {
+        surface.mapRect.p2.x++;
+    }
     getRealPosFromMapPos(surface.mapRect.p1, surface.dimensions.p1, currentZ);
     getRealPosFromMapPos(surface.mapRect.p2, surface.dimensions.p2, currentZ + (surface.mapRect.p2.y - surface.mapRect.p1.y) );
     return true;
 }
 
-bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
+bool GameWindow::traceWallTiles(const mappoint& mt, const tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::Wall && curTileType != TileType::SideWallAngled1) {
-        std::cout << "Bad map! Wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        std::cout << "Bad map! Wall tiles organized in a way that tracer cannot trace the geometry! [" << mt.x << "," << mt.y << "]" << std::endl;
         return false;
     }
     surface.mapRect.p1 = surface.mapRect.p2 = mt;
@@ -385,13 +415,13 @@ bool GameWindow::traceWallTiles(const mappoint& mt, tmx::TileLayer &layer, float
 /// @param layer Current layer being considered
 /// @param currentZ derived Z-point in 3D space
 /// @param surface Surface data to be written, containing the 3D collision data from the detected surface
-bool GameWindow::traceSideWallTiles(const mappoint& mt, tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
+bool GameWindow::traceSideWallTiles(const mappoint& mt, const tmx::TileLayer &layer, float currentZ, SurfaceData &surface)
 {
     TileType lastTileType = TileType::None;
     TileType curTileType = getTileType(mt, layer);
     TileType expectedTileType = TileType::None;
     if(curTileType != TileType::SideWallAngled1 && curTileType != TileType::SideWallAngled2) {
-        std::cout << "Bad map! Side-wall tiles organized in a way that tracer cannot trace the geometry!" << std::endl;
+        std::cout << "Bad map! Side-wall tiles organized in a way that tracer cannot trace the geometry! [" << mt.x << "," << mt.y << "]" << std::endl;
         return false;
     }
     surface.mapRect.p1 = surface.mapRect.p2 = mt;
@@ -473,10 +503,45 @@ void GameWindow::handle_input(const SDL_Event& event)
     }
 }
 
+void realPosToSdlPos(const tripoint &tp, SDL_Point &sp)
+{
+    pixelpos pp;
+    getPixelPosFromRealPos(tp, pp);
+    sp.x = pp.x;
+    sp.y = pp.y;
+}
+
+void drawLine(SDL_Renderer* renderer, const pixelpos& camera, const tripoint &p1, const tripoint &p2)
+{
+    pixelpos pp1, pp2;
+    getPixelPosFromRealPos(p1, pp1);
+    getPixelPosFromRealPos(p2, pp2);
+    SDL_RenderDrawLine(renderer, pp1.x - camera.x, pp1.y - camera.y, pp2.x - camera.x, pp2.y - camera.y);
+}
+
+void drawCuboid(SDL_Renderer* renderer, const pixelpos& camera, const tripoint &p1, const tripoint &p2)
+{
+    drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p2.x, p1.y, p1.z});
+    drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p1.x, p2.y, p1.z});
+    drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p2.x, p1.y, p1.z});
+    drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p1.x, p2.y, p1.z});
+
+    drawLine(renderer, camera, {p1.x, p1.y, p1.z}, {p1.x, p1.y, p2.z});
+    drawLine(renderer, camera, {p2.x, p1.y, p1.z}, {p2.x, p1.y, p2.z});
+    drawLine(renderer, camera, {p1.x, p2.y, p1.z}, {p1.x, p2.y, p2.z});
+    drawLine(renderer, camera, {p2.x, p2.y, p1.z}, {p2.x, p2.y, p2.z});
+
+    drawLine(renderer, camera, {p1.x, p1.y, p2.z}, {p2.x, p1.y, p2.z});
+    drawLine(renderer, camera, {p1.x, p1.y, p2.z}, {p1.x, p2.y, p2.z});
+    drawLine(renderer, camera, {p2.x, p2.y, p2.z}, {p2.x, p1.y, p2.z});
+    drawLine(renderer, camera, {p2.x, p2.y, p2.z}, {p1.x, p2.y, p2.z});
+}
+
 void GameWindow::drawFrame()
 {
     curTime = SDL_GetTicks64();
     float frameDeltaTime = float(curTime - lastFrameTime) / 1000.f;
+    SDL_SetRenderDrawColor(renderer, 100, 149, 237, 255);
     SDL_RenderClear(renderer);
     camera.x = playerActor->getWindowPos().x - (size.x / 2);
     camera.y = playerActor->getWindowPos().y - (size.y / 2);
@@ -489,6 +554,16 @@ void GameWindow::drawFrame()
     for (Actor* actor : actors) {
         actor->draw(frameDeltaTime, camera);
     }
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    for(const auto &surface : surfaces) {
+        const tripoint &p1 = surface.dimensions.p1, &p2 = surface.dimensions.p2;
+        drawCuboid(renderer, camera, p1, p2);
+    }
+    const auto &pCyl = playerActor->getCollisionGeometry();
+
+    drawCuboid(renderer, camera, {pCyl.x - pCyl.r, pCyl.y1, pCyl.z - pCyl.r}, {pCyl.x + pCyl.r, pCyl.y2, pCyl.z + pCyl.r});
+    
     SDL_RenderPresent(renderer);
     lastFrameTime = curTime;
 }

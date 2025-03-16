@@ -27,11 +27,11 @@ struct SpriteSheetConfig
 class SpriteProvider
 {
     size_t spriteGroupIndex;
-    std::unique_ptr<struct SpriteConfig> spriteConfig;
+    struct SpriteConfig& spriteConfig;
     Rect2 spriteRect;
     const struct SpriteGroup* activeGroup;
 public:
-    SpriteProvider(SpriteConfig* spriteConfig);
+    SpriteProvider(SpriteConfig& spriteConfig);
 
     void update(ActorState currentState);
     void draw();

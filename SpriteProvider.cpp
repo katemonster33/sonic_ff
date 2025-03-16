@@ -1,9 +1,9 @@
 #include "SpriteSheet.h"
 
-SpriteProvider::SpriteProvider(SpriteConfig* spriteConfig) :
+SpriteProvider::SpriteProvider(SpriteConfig& spriteConfig) :
     spriteConfig(spriteConfig),
     spriteGroupIndex(0),
-    activeGroup(&spriteConfig->spriteGroups[0]),
+    activeGroup(&spriteConfig.spriteGroups[0]),
     spriteRect({0, 0})
 {
 }
@@ -11,7 +11,7 @@ SpriteProvider::SpriteProvider(SpriteConfig* spriteConfig) :
 void SpriteProvider::update(ActorState currentState)
 {
     if (activeGroup->groupState != currentState) {
-        for (const SpriteGroup& sg : spriteConfig->spriteGroups) {
+        for (const SpriteGroup& sg : spriteConfig.spriteGroups) {
             if (sg.groupState == currentState) {
                 activeGroup = &sg;
             }

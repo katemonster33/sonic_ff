@@ -8,8 +8,8 @@ bool maprect::intersects(const maprect &other) const
 
 bool maprect::intersects(const mappoint &p) const
 {
-    return p.x <= p2.x && p.x >= p1.x && 
-    p.y <= p2.y && p.y >= p1.y;
+    return p.x < p2.x && p.x >= p1.x && 
+    p.y < p2.y && p.y >= p1.y;
 }
 
 float triangulate(float a, float b)
