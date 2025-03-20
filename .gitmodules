@@ -1,3 +1,6 @@
 [submodule "SimpleJSON"]
 	path = SimpleJSON
 	url = https://github.com/nbsdx/SimpleJSON.git
+[submodule "tileson"]
+	path = tileson
+	url = https://github.com/SSBMTonberry/tileson
