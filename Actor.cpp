@@ -9,6 +9,7 @@ Actor::Actor(GameWindow& parentWindow, SpriteConfig& spriteConfig, Texture* text
     spriteProvider(std::make_unique<SpriteProvider>(spriteConfig)),
     texture(texture),
     parentWindow(parentWindow),
+    windowPos{int(mt.x * 16), int(mt.y * 16)},
     realpos(parentWindow.getTripointAtMapPoint(mt)),
     intentMove( MoveVector{0.f, 0.f, 0.f} ),
     curMove( MoveVector{0.f, 0.f, 0.f} ),
