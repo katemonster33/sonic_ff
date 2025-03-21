@@ -17,17 +17,14 @@ project ("sonic_ff")
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image REQUIRED)
-find_package(cJSON CONFIG REQUIRED)
-find_package(PkgConfig REQUIRED)
+find_package(cjson REQUIRED)
 
-pkg_check_modules(tmxlite REQUIRED tmxlite)
-
+add_subdirectory(tmxlite-json/tmxlite)
 
 # Add source to this project's executable.
 add_executable (sonic_ff "main.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "MapLayer.cpp" "Geometry.h" "Geometry.cpp" "SpriteProvider.cpp" "TilesetConfig.h" "TilesetConfig.cpp")
-target_include_directories(sonic_ff PUBLIC ${tmxlite_INCLUDEDIR})
-target_include_directories(sonic_ff PUBLIC cjson)
-target_link_libraries(sonic_ff PRIVATE ${tmxlite_LINK_LIBRARIES} cjson SDL2::SDL2 SDL2::SDL2main $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
+target_include_directories(sonic_ff PUBLIC tileson/include)
+target_link_libraries(sonic_ff PRIVATE cJson SDL2::SDL2 SDL2::SDL2main $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
 if(LINUX)
   target_link_libraries(sonic_ff PRIVATE zstd)
 endif (LINUX)
