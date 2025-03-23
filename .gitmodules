@@ -1,6 +1,3 @@
-[submodule "SimpleJSON"]
-	path = SimpleJSON
-	url = https://github.com/nbsdx/SimpleJSON.git
 [submodule "tmxlite-json"]
 	path = tmxlite-json
 	url = https://github.com/katemonster33/tmxlite-json.git
