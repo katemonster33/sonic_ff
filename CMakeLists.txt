@@ -2,9 +2,6 @@
 # project specific logic here.
 #
 
-#add_subdirectory(tmxparser/thirdparty/tinyxml2)
-#add_subdirectory(tmxparser)
-
 cmake_minimum_required (VERSION 3.10)
 
 # Enable Hot Reload for MSVC compilers if supported.
@@ -17,14 +14,15 @@ project ("sonic_ff")
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image REQUIRED)
-find_package(cjson REQUIRED)
 
+add_subdirectory(cJSON)
 add_subdirectory(tmxlite-json/tmxlite)
-
+target_compile_definitions(tmxlite PUBLIC -DUSE_EXTLIBS)
+target_include_directories(tmxlite PUBLIC cJSON/)
 # Add source to this project's executable.
-add_executable (sonic_ff "main.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "MapLayer.cpp" "Geometry.h" "Geometry.cpp" "SpriteProvider.cpp" "TilesetConfig.h" "TilesetConfig.cpp")
-target_include_directories(sonic_ff PUBLIC tileson/include)
-target_link_libraries(sonic_ff PRIVATE cJson SDL2::SDL2 SDL2::SDL2main $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
+add_executable (sonic_ff "main.cpp" "Actor.cpp" "GameWindow.cpp" "Texture.cpp" "MapLayer.cpp" "Geometry.cpp" "SpriteProvider.cpp" "TilesetConfig.cpp")
+target_include_directories(sonic_ff PUBLIC tmxlite-json/tmxlite/include)
+target_link_libraries(sonic_ff PRIVATE tmxlite cjson SDL2::SDL2 SDL2::SDL2main $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
 if(LINUX)
   target_link_libraries(sonic_ff PRIVATE zstd)
 endif (LINUX)

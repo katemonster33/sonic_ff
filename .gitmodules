@@ -4,3 +4,6 @@
 [submodule "tmxlite-json"]
 	path = tmxlite-json
 	url = https://github.com/katemonster33/tmxlite-json.git
+[submodule "cJSON"]
+	path = cJSON
+	url = https://github.com/DaveGamble/cJSON.git
