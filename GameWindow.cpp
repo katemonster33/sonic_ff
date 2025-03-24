@@ -487,7 +487,7 @@ GameWindow *GameWindow::Create()
     std::vector<std::unique_ptr<Texture>> textures;
     std::vector<std::unique_ptr<MapLayer>> renderLayers;
     tmx::Map map;
-    if (!map.load("assets/robotropolis.tmx")) {
+    if (!map.load("assets/robotropolis.tmj")) {
         SDL_Log("Failed to load map: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
